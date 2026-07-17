@@ -1,16 +1,21 @@
-"""Endpoints JSON do agente-metas-comercial."""
+"""Endpoints JSON do agente-metas-comercial.
+
+⚡ Leitura passa pelo cache 60s (cache.py); QUALQUER escrita (meta/cadastro)
+e o fim de cada sync invalidam tudo — usuário nunca vê dado velho pós-ação.
+"""
 import logging
 import threading
 
 from flask import Blueprint, jsonify, request
 
+import cache
 from auth import requer_leitura, requer_admin, usuario_atual
-from config import CONFIG
-from db import get_db, dict_cur
+from db import db_conn, dict_cur
 from estoque_client import fetch_estoque_map
 from metas_service import (
-    cascatear, gravar_meta, metas_vigentes, safra_atual, timeline,
-    ultimo_run_ok, visao_consolidado, visao_dashboard, visao_vendedor, _cadastros,
+    cascatear, gravar_meta, metas_vigentes, realizado_por_vendedor_cultivar,
+    safra_atual, timeline, ultimo_run_ok, visao_consolidado, visao_dashboard,
+    visao_vendedor, _cadastros,
 )
 from pipeline import run_sync
 
@@ -25,7 +30,7 @@ _sync_thread = {"t": None}
 @api.post("/sync")
 @requer_admin
 def api_sync():
-    """Botão 'Atualizar agora' — roda pipeline em background (lock no PG evita paralelo)."""
+    """Botão 'Atualizar agora' — pipeline em background (lock no PG evita paralelo)."""
     t = _sync_thread.get("t")
     if t and t.is_alive():
         return jsonify({"status": "ok", "message": "sincronização já em andamento"}), 202
@@ -45,7 +50,8 @@ def api_sync():
 @api.get("/sync/status")
 @requer_leitura
 def api_sync_status():
-    with get_db() as conn, dict_cur(conn) as cur:
+    # sem cache — é o endpoint de polling do botão
+    with db_conn() as conn, dict_cur(conn) as cur:
         cur.execute("""
             SELECT id, inicio::text, fim::text, status, etapa, resumo
             FROM sync_runs ORDER BY id DESC LIMIT 10
@@ -55,37 +61,51 @@ def api_sync_status():
     return jsonify({"status": "ok", "rodando": rodando, "runs": runs})
 
 
-# ── Visões ────────────────────────────────────────────────────────────────────
+# ── Visões (cacheadas 60s) ────────────────────────────────────────────────────
 
 @api.get("/dashboard")
 @requer_leitura
 def api_dashboard():
-    with get_db() as conn:
-        return jsonify({"status": "ok", "data": visao_dashboard(conn, safra_atual())})
+    data = cache.get("dashboard")
+    if data is None:
+        with db_conn() as conn:
+            data = cache.set("dashboard", visao_dashboard(conn, safra_atual()))
+    return jsonify({"status": "ok", "data": data})
 
 
 @api.get("/vendedor/<int:vendedor_id>")
 @requer_leitura
 def api_vendedor(vendedor_id):
-    with get_db() as conn:
-        return jsonify({"status": "ok", "data": visao_vendedor(conn, safra_atual(), vendedor_id)})
+    key = f"vendedor:{vendedor_id}"
+    data = cache.get(key)
+    if data is None:
+        with db_conn() as conn:
+            data = cache.set(key, visao_vendedor(conn, safra_atual(), vendedor_id))
+    return jsonify({"status": "ok", "data": data})
 
 
 @api.get("/consolidado")
 @requer_leitura
 def api_consolidado():
-    estoque_map = fetch_estoque_map()
-    with get_db() as conn:
-        data = visao_consolidado(conn, safra_atual(), estoque_map)
-    return jsonify({"status": "ok", "data": data, "estoque_ok": bool(estoque_map)})
+    payload = cache.get("consolidado")
+    if payload is None:
+        estoque_map = fetch_estoque_map()
+        with db_conn() as conn:
+            data = visao_consolidado(conn, safra_atual(), estoque_map)
+        payload = cache.set("consolidado", {"data": data, "estoque_ok": bool(estoque_map)})
+    return jsonify({"status": "ok", **payload})
 
 
 @api.get("/timeline")
 @requer_leitura
 def api_timeline():
     limite = min(int(request.args.get("limite", 200)), 500)
-    with get_db() as conn:
-        return jsonify({"status": "ok", "data": timeline(conn, safra_atual(), limite)})
+    key = f"timeline:{limite}"
+    data = cache.get(key)
+    if data is None:
+        with db_conn() as conn:
+            data = cache.set(key, timeline(conn, safra_atual(), limite))
+    return jsonify({"status": "ok", "data": data})
 
 
 # ── Metas ─────────────────────────────────────────────────────────────────────
@@ -93,48 +113,48 @@ def api_timeline():
 @api.get("/metas/grade")
 @requer_leitura
 def api_metas_grade():
-    """Grade vendedor×cultivar: meta vigente + vendido (pra tela de gestão)."""
-    with get_db() as conn:
-        vendedores, cultivares = _cadastros(conn)
-        metas = metas_vigentes(conn, safra_atual())
-        run = ultimo_run_ok(conn)
-        from metas_service import realizado_por_vendedor_cultivar
-        realizado = realizado_por_vendedor_cultivar(conn, run["id"]) if run else {}
-    return jsonify({"status": "ok", "data": {
-        "vendedores": [
-            {"id": vid, "nome": v.get("nome_exibicao") or v["nome_sa"], "ativo": v["ativo"]}
-            for vid, v in vendedores.items()
-        ],
-        "cultivares": [
-            {"id": cid, "nome": c.get("nome_exibicao") or c["nome_norm"], "oculta": c["oculta"]}
-            for cid, c in cultivares.items()
-        ],
-        "metas": [
-            {"vendedor_id": v, "cultivar_id": c, "valor": m["valor"]}
-            for (v, c), m in metas.items()
-        ],
-        "realizado": [
-            {"vendedor_id": v, "cultivar_id": c, "bags": round(b, 2)}
-            for (v, c), b in realizado.items() if v is not None and c is not None
-        ],
-    }})
+    data = cache.get("grade")
+    if data is None:
+        with db_conn() as conn:
+            vendedores, cultivares = _cadastros(conn)
+            metas = metas_vigentes(conn, safra_atual())
+            run = ultimo_run_ok(conn)
+            realizado = realizado_por_vendedor_cultivar(conn, run["id"]) if run else {}
+        data = cache.set("grade", {
+            "vendedores": [
+                {"id": vid, "nome": v.get("nome_exibicao") or v["nome_sa"], "ativo": v["ativo"]}
+                for vid, v in vendedores.items()
+            ],
+            "cultivares": [
+                {"id": cid, "nome": c.get("nome_exibicao") or c["nome_norm"], "oculta": c["oculta"]}
+                for cid, c in cultivares.items()
+            ],
+            "metas": [
+                {"vendedor_id": v, "cultivar_id": c, "valor": m["valor"]}
+                for (v, c), m in metas.items()
+            ],
+            "realizado": [
+                {"vendedor_id": v, "cultivar_id": c, "bags": round(b, 2)}
+                for (v, c), b in realizado.items() if v is not None and c is not None
+            ],
+        })
+    return jsonify({"status": "ok", "data": data})
 
 
 @api.post("/metas")
 @requer_admin
 def api_gravar_meta():
-    """Edição direta de uma célula da grade. Cria versão nova."""
     p = request.get_json(force=True)
     campos = ("vendedor_id", "cultivar_id", "valor")
     if any(p.get(k) is None for k in campos):
         return jsonify({"status": "error", "message": f"campos obrigatórios: {campos}"}), 400
-    with get_db() as conn:
+    with db_conn() as conn:
         vid = gravar_meta(
             conn, safra_atual(), int(p["vendedor_id"]), int(p["cultivar_id"]),
             float(p["valor"]), p.get("tipo", "AJUSTE"),
             (p.get("motivo") or "").strip() or "edição manual", usuario_atual(),
         )
-        conn.commit()
+    cache.invalidate()
     return jsonify({"status": "ok", "versao_id": vid})
 
 
@@ -162,12 +182,12 @@ def _cascata(preview: bool):
                         "message": "cultivar_id, volume e vendedor_ids são obrigatórios"}), 400
     if not preview and not motivo:
         return jsonify({"status": "error", "message": "motivo é obrigatório pra aplicar"}), 400
-    with get_db() as conn:
+    with db_conn() as conn:
         plano = cascatear(conn, safra_atual(), int(cultivar_id), float(volume),
                           alvos, modo, motivo, usuario_atual(),
                           manual=p.get("manual"), preview=preview)
-        if not preview:
-            conn.commit()
+    if not preview:
+        cache.invalidate()
     return jsonify({"status": "ok", "preview": preview, "plano": plano})
 
 
@@ -193,7 +213,7 @@ def api_metas_historico():
         sql += " AND mv.cultivar_id=%s"
         params.append(int(cult))
     sql += " ORDER BY mv.criado_em DESC LIMIT 500"
-    with get_db() as conn, dict_cur(conn) as cur:
+    with db_conn() as conn, dict_cur(conn) as cur:
         cur.execute(sql, params)
         return jsonify({"status": "ok", "data": [dict(r) for r in cur.fetchall()]})
 
@@ -203,7 +223,7 @@ def api_metas_historico():
 @api.get("/vendedores")
 @requer_leitura
 def api_vendedores():
-    with get_db() as conn, dict_cur(conn) as cur:
+    with db_conn() as conn, dict_cur(conn) as cur:
         cur.execute("""
             SELECT id, nome_sa, nome_exibicao, data_contratacao::text, ativo
             FROM vendedores ORDER BY nome_sa
@@ -223,10 +243,10 @@ def api_vendedor_update(vid):
     if not sets:
         return jsonify({"status": "error", "message": "nada pra atualizar"}), 400
     params.append(vid)
-    with get_db() as conn:
+    with db_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(f"UPDATE vendedores SET {', '.join(sets)} WHERE id=%s", params)
-        conn.commit()
+    cache.invalidate()
     return jsonify({"status": "ok"})
 
 
@@ -242,8 +262,8 @@ def api_cultivar_update(cid):
     if not sets:
         return jsonify({"status": "error", "message": "nada pra atualizar"}), 400
     params.append(cid)
-    with get_db() as conn:
+    with db_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(f"UPDATE cultivares SET {', '.join(sets)} WHERE id=%s", params)
-        conn.commit()
+    cache.invalidate()
     return jsonify({"status": "ok"})

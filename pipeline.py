@@ -12,7 +12,8 @@ import logging
 
 import psycopg2.extras
 
-from db import get_db
+import cache
+from db import get_db, put_db
 from sa_client import fetch_linhas_sa, agregar_pedido_cultivar
 
 log = logging.getLogger("MetasComercial.Pipeline")
@@ -79,8 +80,10 @@ def run_sync(force_sa: bool = True) -> dict:
         finally:
             with conn.cursor() as cur:
                 cur.execute("SELECT pg_advisory_unlock(%s)", (LOCK_KEY,))
+            conn.commit()
+            cache.invalidate()   # painel enxerga o snapshot novo na hora
     finally:
-        conn.close()
+        put_db(conn)
 
 
 def _run_sync_locked(conn, force_sa: bool) -> dict:
@@ -168,29 +171,31 @@ def _set_etapa(conn, run_id, etapa):
 
 
 def _upsert_vendedores(conn, nomes: set) -> dict:
-    ids = {}
+    """Batch: 1 INSERT + 1 SELECT (banco remoto — mínimo de roundtrips)."""
+    if not nomes:
+        return {}
     with conn.cursor() as cur:
-        for nome in sorted(nomes):
-            cur.execute("""
-                INSERT INTO vendedores (nome_sa, nome_exibicao) VALUES (%s, %s)
-                ON CONFLICT (nome_sa) DO UPDATE SET nome_sa = EXCLUDED.nome_sa
-                RETURNING id
-            """, (nome, nome.title()))
-            ids[nome] = cur.fetchone()[0]
-    return ids
+        psycopg2.extras.execute_values(cur, """
+            INSERT INTO vendedores (nome_sa, nome_exibicao) VALUES %s
+            ON CONFLICT (nome_sa) DO NOTHING
+        """, [(n, n.title()) for n in sorted(nomes)])
+        cur.execute("SELECT nome_sa, id FROM vendedores WHERE nome_sa = ANY(%s)",
+                    (list(nomes),))
+        return dict(cur.fetchall())
 
 
 def _upsert_cultivares(conn, pares: set) -> dict:
-    ids = {}
+    if not pares:
+        return {}
     with conn.cursor() as cur:
-        for norm, nome in sorted(pares):
-            cur.execute("""
-                INSERT INTO cultivares (nome_norm, nome_exibicao) VALUES (%s, %s)
-                ON CONFLICT (nome_norm) DO UPDATE SET nome_norm = EXCLUDED.nome_norm
-                RETURNING id
-            """, (norm, nome))
-            ids[norm] = cur.fetchone()[0]
-    return ids
+        psycopg2.extras.execute_values(cur, """
+            INSERT INTO cultivares (nome_norm, nome_exibicao) VALUES %s
+            ON CONFLICT (nome_norm) DO NOTHING
+        """, sorted(pares))
+        norms = [p[0] for p in pares]
+        cur.execute("SELECT nome_norm, id FROM cultivares WHERE nome_norm = ANY(%s)",
+                    (norms,))
+        return dict(cur.fetchall())
 
 
 def _load_snapshot_anterior(conn, run_atual: int):

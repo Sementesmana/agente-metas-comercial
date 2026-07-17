@@ -36,8 +36,8 @@ def health():
     from datetime import datetime
     deps = {"db": False}
     try:
-        from db import get_db
-        with get_db() as conn, conn.cursor() as cur:
+        from db import db_conn
+        with db_conn() as conn, conn.cursor() as cur:
             cur.execute("SELECT 1")
             deps["db"] = True
     except Exception:
