@@ -23,6 +23,8 @@ log = logging.getLogger("MetasComercial")
 
 app = Flask(__name__)
 app.secret_key = CONFIG["SECRET_KEY"]
+# Embed em iframe no SE (cross-site): cookie precisa de SameSite=None + Secure
+app.config.update(SESSION_COOKIE_SAMESITE="None", SESSION_COOKIE_SECURE=True)
 
 from routes_api import api  # noqa: E402
 from routes_ui import ui    # noqa: E402

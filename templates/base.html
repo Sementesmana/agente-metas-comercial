@@ -27,6 +27,17 @@
   </main>
 </div>
 <script>
+// Embed no SE (iframe bloqueia cookie de terceiro): se veio ?senha= na URL,
+// propaga em TODAS as chamadas de API e nos links do menu — auth sem cookie.
+const SENHA_URL = new URLSearchParams(location.search).get('senha');
+function comSenha(url) {
+  if (!SENHA_URL) return url;
+  return url + (url.includes('?') ? '&' : '?') + 'senha=' + encodeURIComponent(SENHA_URL);
+}
+document.addEventListener('DOMContentLoaded', () => {
+  if (SENHA_URL) document.querySelectorAll('.sidebar nav a')
+    .forEach(a => a.href = comSenha(a.getAttribute('href')));
+});
 const fmt  = n => Number(n ?? 0).toLocaleString('pt-BR', {maximumFractionDigits: 0});
 const fmt2 = n => Number(n ?? 0).toLocaleString('pt-BR', {maximumFractionDigits: 2});
 const pct  = p => p == null ? '—' : (p * 100).toLocaleString('pt-BR', {maximumFractionDigits: 1}) + '%';
@@ -37,12 +48,12 @@ const gaugeHtml = p => {
   return `<div class="gauge ${gaugeCls(p)}"><div class="fill" style="width:${w}%"></div></div>`;
 };
 async function apiGet(url) {
-  const r = await fetch(url);
+  const r = await fetch(comSenha(url));
   if (r.status === 401) { location.href = '/login?next=' + encodeURIComponent(location.pathname); return null; }
   return r.json();
 }
 async function apiPost(url, body) {
-  const r = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'},
+  const r = await fetch(comSenha(url), {method: 'POST', headers: {'Content-Type': 'application/json'},
                               body: JSON.stringify(body || {})});
   return r.json();
 }
