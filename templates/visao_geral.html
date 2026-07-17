@@ -7,67 +7,55 @@
     <div class="sub" id="subSync">carregando…</div>
   </div>
   <div style="display:flex;gap:10px">
-    {% if admin %}<button class="btn ouro" id="btnSync">⟳ Atualizar agora</button>{% endif %}
+    {% if admin %}<button class="btn primario" id="btnSync">⟳ Atualizar agora</button>{% endif %}
   </div>
 </div>
 
 <div class="kpis" id="kpis"></div>
 
 <div class="card">
-  <h2>Ranking de vendedores</h2>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+    <h2 style="margin:0">Ranking de vendedores</h2>
+    <input class="busca-input" id="qVend" placeholder="🔎 Buscar vendedor…">
+  </div>
   <div style="overflow-x:auto">
   <table>
     <thead><tr>
-      <th>Vendedor</th><th>Tempo de casa</th><th>Vendido</th><th>Meta</th>
+      <th style="width:40px"></th><th>Vendedor</th><th>Tempo de casa</th><th>Vendido</th><th>Meta</th>
       <th>Falta</th><th>% Ating.</th><th style="width:160px">Progresso</th>
     </tr></thead>
     <tbody id="ranking"></tbody>
   </table>
   </div>
 </div>
-
-<!-- modal detalhe do vendedor -->
-<div class="modal-bg" id="modalBg" style="display:none" onclick="if(event.target===this)fecharModal()">
-  <div class="modal">
-    <div style="display:flex;justify-content:space-between;align-items:baseline">
-      <h2 id="mTitulo">—</h2>
-      <button class="btn" onclick="fecharModal()">Fechar</button>
-    </div>
-    <div class="sub" id="mSub" style="color:var(--texto-leve);font-size:13px;margin-bottom:10px"></div>
-    <div style="overflow-x:auto">
-    <table>
-      <thead><tr><th>Cultivar</th><th>Vendido</th><th>Meta</th><th>Falta</th><th>%</th><th style="width:120px"></th></tr></thead>
-      <tbody id="mLinhas"></tbody>
-      <tfoot><tr id="mTotais"></tr></tfoot>
-    </table>
-    </div>
-    <h2 style="font-size:15px;margin-top:16px">Pedidos no snapshot</h2>
-    <div style="overflow-x:auto;max-height:280px">
-    <table>
-      <thead><tr><th>Pedido</th><th>Data</th><th>Cliente</th><th>Cultivar</th><th>Bags</th><th>Status</th></tr></thead>
-      <tbody id="mPedidos"></tbody>
-    </table>
-    </div>
-  </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+let RANK = [];
+
 async function carregar() {
   const j = await apiGet('/api/dashboard');
   if (!j || j.status !== 'ok') return;
   const d = j.data;
   document.getElementById('subSync').textContent =
-    d.ultimo_sync ? ('último sync: ' + d.ultimo_sync.slice(0, 16).replace('T', ' ')) : 'nenhum sync ainda — clique em Atualizar agora';
+    d.ultimo_sync ? ('Atualizado: ' + d.ultimo_sync.slice(0, 16).replace('T', ' ')) : 'nenhum sync ainda — clique em Atualizar agora';
   const vends = d.ranking.filter(r => r.vendedor_id != null);
   document.getElementById('kpis').innerHTML = `
     <div class="kpi"><div class="ico verde">🎯</div><div class="val verde">${fmt(d.kpis.meta_total)} <small>bags</small></div><div class="lbl">Meta Total</div></div>
     <div class="kpi"><div class="ico laranja">🛒</div><div class="val laranja">${fmt(d.kpis.vendido_total)} <small>bags</small></div><div class="lbl">Vendido</div></div>
     <div class="kpi"><div class="ico azul">📈</div><div class="val azul">${pct(d.kpis.pct_geral)}</div><div class="lbl">Atingimento Geral</div></div>
     <div class="kpi"><div class="ico ouro">👥</div><div class="val ouro">${vends.length}</div><div class="lbl">Vendedores</div></div>`;
-  document.getElementById('ranking').innerHTML = d.ranking.map(r => `
-    <tr ${r.vendedor_id != null ? `class="clicavel" onclick="abrirVendedor(${r.vendedor_id})"` : 'style="opacity:.6"'}>
+  RANK = d.ranking;
+  render();
+}
+
+function render() {
+  const termo = (document.getElementById('qVend').value || '').trim().toUpperCase();
+  const linhas = RANK.filter(r => !termo || r.nome.toUpperCase().includes(termo));
+  document.getElementById('ranking').innerHTML = linhas.map(r => `
+    <tr id="row-${r.vendedor_id}">
+      <td>${r.vendedor_id != null ? `<button class="btn-mais" onclick="toggleVendedor(${r.vendedor_id}, this)">+</button>` : ''}</td>
       <td>${r.nome}</td>
       <td style="color:var(--texto-leve)">${tempoDeCasa(r.data_contratacao) ?? '—'}</td>
       <td>${fmt(r.vendido)}</td><td>${fmt(r.meta)}</td><td>${fmt(r.falta)}</td>
@@ -76,30 +64,47 @@ async function carregar() {
     </tr>`).join('');
 }
 
-async function abrirVendedor(id) {
+async function toggleVendedor(id, btn) {
+  const row = document.getElementById('row-' + id);
+  const aberta = document.getElementById('det-' + id);
+  if (aberta) { aberta.remove(); btn.classList.remove('aberto'); return; }
+  btn.classList.add('aberto');
   const j = await apiGet('/api/vendedor/' + id);
-  if (!j || j.status !== 'ok') return;
+  if (!j || j.status !== 'ok') { btn.classList.remove('aberto'); return; }
   const d = j.data;
-  document.getElementById('mTitulo').textContent = d.vendedor.nome;
-  document.getElementById('mSub').textContent =
-    (d.vendedor.data_contratacao ? ('contratado em ' + d.vendedor.data_contratacao + ' · ' + tempoDeCasa(d.vendedor.data_contratacao)) : 'data de contratação não cadastrada');
-  document.getElementById('mLinhas').innerHTML = d.linhas.map(l => `
-    <tr><td>${l.cultivar}</td><td>${fmt(l.vendido)}</td><td>${fmt(l.meta)}</td>
-    <td class="${l.falta < 0 ? 'pos' : ''}">${l.falta < 0 ? '+' + fmt(-l.falta) : fmt(l.falta)}</td>
-    <td>${pct(l.pct)}</td><td>${gaugeHtml(l.pct)}</td></tr>`).join('');
+  const det = document.createElement('tr');
+  det.className = 'row-detail';
+  det.id = 'det-' + id;
   const tm = d.totais.meta, tv = d.totais.vendido;
-  document.getElementById('mTotais').innerHTML =
-    `<td>TOTAL</td><td>${fmt(tv)}</td><td>${fmt(tm)}</td><td>${fmt(Math.max(tm - tv, 0))}</td>
-     <td>${pct(tm ? tv / tm : null)}</td><td></td>`;
-  document.getElementById('mPedidos').innerHTML = d.pedidos.map(p => `
-    <tr style="${p.incluido ? '' : 'opacity:.45'}">
-      <td>${p.numpedido}</td><td>${p.data ?? '—'}</td><td style="text-align:left">${p.cliente}</td>
-      <td style="text-align:left">${p.cultivar_norm}</td><td>${fmt2(p.bags)}</td>
-      <td style="text-align:left">${p.status_raw}${p.incluido ? '' : ' (fora do funil)'}</td>
-    </tr>`).join('');
-  document.getElementById('modalBg').style.display = 'flex';
+  det.innerHTML = `<td colspan="8">
+    <div class="subtitulo">${d.vendedor.nome} — por cultivar
+      ${d.vendedor.data_contratacao ? '· contratado em ' + d.vendedor.data_contratacao + ' (' + tempoDeCasa(d.vendedor.data_contratacao) + ')' : ''}</div>
+    <table>
+      <thead><tr><th>Cultivar</th><th>Vendido</th><th>Meta</th><th>Falta</th><th>%</th><th style="width:130px">Progresso</th></tr></thead>
+      <tbody>${d.linhas.map(l => `
+        <tr><td>${l.cultivar}</td><td>${fmt(l.vendido)}</td><td>${fmt(l.meta)}</td>
+        <td class="${l.falta < 0 ? 'pos' : ''}">${l.falta < 0 ? '+' + fmt(-l.falta) : fmt(l.falta)}</td>
+        <td>${pct(l.pct)}</td><td>${gaugeHtml(l.pct)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td>TOTAL</td><td>${fmt(tv)}</td><td>${fmt(tm)}</td><td>${fmt(Math.max(tm - tv, 0))}</td>
+        <td>${pct(tm ? tv / tm : null)}</td><td></td></tr></tfoot>
+    </table>
+    <div class="subtitulo">Pedidos no snapshot (${d.pedidos.length})</div>
+    <div style="max-height:260px;overflow:auto">
+    <table>
+      <thead><tr><th>Pedido</th><th>Data</th><th>Cliente</th><th>Cultivar</th><th>Bags</th><th>Status</th></tr></thead>
+      <tbody>${d.pedidos.map(p => `
+        <tr style="${p.incluido ? '' : 'opacity:.45'}">
+          <td>${p.numpedido}</td><td>${p.data ?? '—'}</td><td style="text-align:left">${p.cliente}</td>
+          <td style="text-align:left">${p.cultivar_norm}</td><td>${fmt2(p.bags)}</td>
+          <td style="text-align:left">${p.status_raw}${p.incluido ? '' : ' (fora do funil)'}</td>
+        </tr>`).join('')}</tbody>
+    </table>
+    </div>
+  </td>`;
+  row.after(det);
 }
-function fecharModal() { document.getElementById('modalBg').style.display = 'none'; }
+
+document.getElementById('qVend').oninput = render;
 
 const btn = document.getElementById('btnSync');
 if (btn) btn.onclick = async () => {

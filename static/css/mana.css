@@ -178,3 +178,22 @@ label { font-size: 12px; font-weight: 700; color: var(--texto-leve); display: bl
   .sidebar .rodape { display: none; }
   .conteudo { padding: 16px; }
 }
+
+/* ── Drill inline com "+" (padrão painel de estoque) ── */
+.btn-mais {
+  width: 26px; height: 26px; border-radius: 999px; border: none; cursor: pointer;
+  background: var(--verde-suave); color: var(--verde); font-size: 16px; font-weight: 800;
+  line-height: 1; display: inline-flex; align-items: center; justify-content: center;
+  transition: transform .15s ease, background .15s ease;
+}
+.btn-mais:hover { background: var(--verde); color: #fff; }
+.btn-mais.aberto { transform: rotate(45deg); background: var(--verde); color: #fff; }
+tr.row-detail > td {
+  background: #F7F9FC; padding: 14px 18px; border-bottom: 2px solid var(--border);
+}
+tr.row-detail .subtitulo { font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--texto-leve); font-weight: 800; margin: 10px 0 6px; }
+tr.row-detail table { background: #fff; border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden; }
+tr.row-detail thead th { position: static; }
+.busca-input { max-width: 320px; }

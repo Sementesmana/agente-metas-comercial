@@ -8,13 +8,16 @@
   </div>
 </div>
 <div class="card">
-  <div id="avisoEstoque" style="display:none;color:var(--vermelho);font-size:13px;margin-bottom:10px">
-    ⚠️ agente-estoque indisponível — colunas de estoque zeradas (o vendido continua correto).
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+    <div id="avisoEstoque" style="display:none;color:var(--vermelho);font-size:13px">
+      ⚠️ agente-estoque indisponível — colunas de estoque zeradas (o vendido continua correto).
+    </div>
+    <input class="busca-input" id="qCult" placeholder="🔎 Buscar cultivar…">
   </div>
   <div style="overflow-x:auto">
   <table>
     <thead><tr>
-      <th>Cultivar</th><th>Estoque inicial</th><th>Meta total</th><th>Vendido</th>
+      <th style="width:40px"></th><th>Cultivar</th><th>Estoque inicial</th><th>Meta total</th><th>Vendido</th>
       <th>Saldo disponível</th><th>Saldo após meta</th><th>% Ating.</th><th style="width:150px">Progresso</th>
     </tr></thead>
     <tbody id="linhas"></tbody>
@@ -25,14 +28,23 @@
 {% endblock %}
 {% block scripts %}
 <script>
-(async () => {
+let DADOS = [];
+
+async function carregar() {
   const j = await apiGet('/api/consolidado');
   if (!j || j.status !== 'ok') return;
   if (!j.estoque_ok) document.getElementById('avisoEstoque').style.display = 'block';
-  const d = j.data;
+  DADOS = j.data;
+  render();
+}
+
+function render() {
+  const termo = (document.getElementById('qCult').value || '').trim().toUpperCase();
+  const d = DADOS.filter(x => !termo || x.cultivar.toUpperCase().includes(termo));
   document.getElementById('linhas').innerHTML = d.map(x => `
-    <tr>
-      <td>${x.cultivar}${x.sem_estoque_info ? ' <span title="cultivar sem cadastro no agente-estoque" style="color:var(--ouro)">•</span>' : ''}</td>
+    <tr id="crow-${x.cultivar_id}">
+      <td><button class="btn-mais" onclick="toggleCultivar(${x.cultivar_id}, this)">+</button></td>
+      <td>${x.cultivar}${x.sem_estoque_info ? ' <span title="cultivar sem cadastro no agente-estoque" style="color:var(--ouro-claro)">•</span>' : ''}</td>
       <td>${fmt(x.estoque_inicial)}</td><td>${fmt(x.meta)}</td><td>${fmt(x.vendido)}</td>
       <td class="${x.saldo_disponivel < 0 ? 'neg' : ''}">${fmt(x.saldo_disponivel)}</td>
       <td class="${x.saldo_apos_meta < 0 ? 'neg' : ''}">${fmt(x.saldo_apos_meta)}</td>
@@ -41,8 +53,50 @@
   const t = d.reduce((a, x) => ({ei: a.ei + x.estoque_inicial, m: a.m + x.meta, v: a.v + x.vendido,
     sd: a.sd + x.saldo_disponivel, sam: a.sam + x.saldo_apos_meta}), {ei:0,m:0,v:0,sd:0,sam:0});
   document.getElementById('totais').innerHTML =
-    `<td>TOTAL</td><td>${fmt(t.ei)}</td><td>${fmt(t.m)}</td><td>${fmt(t.v)}</td>
+    `<td></td><td>TOTAL</td><td>${fmt(t.ei)}</td><td>${fmt(t.m)}</td><td>${fmt(t.v)}</td>
      <td>${fmt(t.sd)}</td><td>${fmt(t.sam)}</td><td>${pct(t.m ? t.v / t.m : null)}</td><td></td>`;
-})();
+}
+
+async function toggleCultivar(id, btn) {
+  const row = document.getElementById('crow-' + id);
+  const aberta = document.getElementById('cdet-' + id);
+  if (aberta) { aberta.remove(); btn.classList.remove('aberto'); return; }
+  btn.classList.add('aberto');
+  const j = await apiGet('/api/cultivar/' + id);
+  if (!j || j.status !== 'ok') { btn.classList.remove('aberto'); return; }
+  const d = j.data;
+  const det = document.createElement('tr');
+  det.className = 'row-detail';
+  det.id = 'cdet-' + id;
+  det.innerHTML = `<td colspan="9">
+    <div class="subtitulo">${d.cultivar.nome} — por vendedor</div>
+    <table>
+      <thead><tr><th>Vendedor</th><th>Vendido</th><th>Meta</th><th>Falta</th><th>%</th><th style="width:130px">Progresso</th></tr></thead>
+      <tbody>${d.linhas.map(l => `
+        <tr><td>${l.vendedor}</td><td>${fmt(l.vendido)}</td><td>${fmt(l.meta)}</td>
+        <td class="${l.falta < 0 ? 'pos' : ''}">${l.falta < 0 ? '+' + fmt(-l.falta) : fmt(l.falta)}</td>
+        <td>${pct(l.pct)}</td><td>${gaugeHtml(l.pct)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td>TOTAL</td><td>${fmt(d.totais.vendido)}</td><td>${fmt(d.totais.meta)}</td>
+        <td>${fmt(Math.max(d.totais.meta - d.totais.vendido, 0))}</td>
+        <td>${pct(d.totais.meta ? d.totais.vendido / d.totais.meta : null)}</td><td></td></tr></tfoot>
+    </table>
+    <div class="subtitulo">Pedidos no snapshot (${d.pedidos.length})</div>
+    <div style="max-height:260px;overflow:auto">
+    <table>
+      <thead><tr><th>Pedido</th><th>Data</th><th>Cliente</th><th>Vendedor</th><th>Bags</th><th>Status</th></tr></thead>
+      <tbody>${d.pedidos.map(p => `
+        <tr style="${p.incluido ? '' : 'opacity:.45'}">
+          <td>${p.numpedido}</td><td>${p.data ?? '—'}</td><td style="text-align:left">${p.cliente}</td>
+          <td style="text-align:left">${p.vendedor_nome || '—'}</td><td>${fmt2(p.bags)}</td>
+          <td style="text-align:left">${p.status_raw}${p.incluido ? '' : ' (fora do funil)'}</td>
+        </tr>`).join('')}</tbody>
+    </table>
+    </div>
+  </td>`;
+  row.after(det);
+}
+
+document.getElementById('qCult').oninput = render;
+carregar();
 </script>
 {% endblock %}

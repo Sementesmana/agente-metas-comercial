@@ -256,6 +256,53 @@ def visao_vendedor(conn, safra: str, vendedor_id: int) -> dict:
     }
 
 
+def visao_cultivar(conn, safra: str, cultivar_id: int) -> dict:
+    """Drill da cultivar (padrão '+' do estoque): quebra por vendedor + pedidos."""
+    run = ultimo_run_ok(conn, safra)
+    vendedores, cultivares = _cadastros(conn)
+    metas = metas_vigentes(conn, safra)
+    realizado = realizado_por_vendedor_cultivar(conn, run["id"]) if run else {}
+
+    vend_ids = ({v for (v, c) in metas if c == cultivar_id} |
+                {v for (v, c) in realizado if c == cultivar_id and v is not None})
+    linhas = []
+    for v_id in vend_ids:
+        v = vendedores.get(v_id, {})
+        meta = metas.get((v_id, cultivar_id), {}).get("valor", 0.0)
+        vendido = realizado.get((v_id, cultivar_id), 0.0)
+        linhas.append({
+            "vendedor_id": v_id,
+            "vendedor": v.get("nome_exibicao") or v.get("nome_sa") or "?",
+            "meta": round(meta, 2), "vendido": round(vendido, 2),
+            "falta": round(meta - vendido, 2),
+            "pct": round(vendido / meta, 4) if meta else None,
+        })
+    linhas.sort(key=lambda x: -x["vendido"])
+
+    pedidos = []
+    if run:
+        with dict_cur(conn) as cur:
+            cur.execute("""
+                SELECT numpedido, data_pedido::text AS data, cliente, vendedor_nome,
+                       bags::float AS bags, status_raw, incluido, uso_semente
+                FROM snapshot_pedidos
+                WHERE run_id=%s AND cultivar_id=%s
+                ORDER BY data_pedido DESC NULLS LAST
+            """, (run["id"], cultivar_id))
+            pedidos = [dict(r) for r in cur.fetchall()]
+
+    c = cultivares.get(cultivar_id, {})
+    return {
+        "cultivar": {"id": cultivar_id, "nome": c.get("nome_exibicao") or c.get("nome_norm")},
+        "linhas": linhas,
+        "totais": {
+            "meta": round(sum(l["meta"] for l in linhas), 2),
+            "vendido": round(sum(l["vendido"] for l in linhas), 2),
+        },
+        "pedidos": pedidos,
+    }
+
+
 def visao_consolidado(conn, safra: str, estoque_map: dict) -> list:
     """
     estoque_map: {cultivar_norm: {producao_bag, compra_bag, qualidade_bag}}

@@ -91,6 +91,19 @@ def api_vendedor(vendedor_id):
     return jsonify({"status": "ok", "data": data})
 
 
+@api.get("/cultivar/<int:cultivar_id>")
+@requer_leitura
+def api_cultivar(cultivar_id):
+    safra = _safra_req()
+    key = f"cultivar:{safra}:{cultivar_id}"
+    data = cache.get(key)
+    if data is None:
+        from metas_service import visao_cultivar
+        with db_conn() as conn:
+            data = cache.set(key, visao_cultivar(conn, safra, cultivar_id))
+    return jsonify({"status": "ok", "data": data})
+
+
 @api.get("/consolidado")
 @requer_leitura
 def api_consolidado():
