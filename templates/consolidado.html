@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block titulo %}Consolidado por cultivar{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div>
+    <h1>Consolidado por cultivar</h1>
+    <div class="sub">estoque inicial (agente-estoque) × meta × vendido — casamento estoque/meta</div>
+  </div>
+</div>
+<div class="card">
+  <div id="avisoEstoque" style="display:none;color:var(--vermelho);font-size:13px;margin-bottom:10px">
+    ⚠️ agente-estoque indisponível — colunas de estoque zeradas (o vendido continua correto).
+  </div>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr>
+      <th>Cultivar</th><th>Estoque inicial</th><th>Meta total</th><th>Vendido</th>
+      <th>Saldo disponível</th><th>Saldo após meta</th><th>% Ating.</th><th style="width:150px">Progresso</th>
+    </tr></thead>
+    <tbody id="linhas"></tbody>
+    <tfoot><tr id="totais"></tr></tfoot>
+  </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(async () => {
+  const j = await apiGet('/api/consolidado');
+  if (!j || j.status !== 'ok') return;
+  if (!j.estoque_ok) document.getElementById('avisoEstoque').style.display = 'block';
+  const d = j.data;
+  document.getElementById('linhas').innerHTML = d.map(x => `
+    <tr>
+      <td>${x.cultivar}${x.sem_estoque_info ? ' <span title="cultivar sem cadastro no agente-estoque" style="color:var(--ouro)">•</span>' : ''}</td>
+      <td>${fmt(x.estoque_inicial)}</td><td>${fmt(x.meta)}</td><td>${fmt(x.vendido)}</td>
+      <td class="${x.saldo_disponivel < 0 ? 'neg' : ''}">${fmt(x.saldo_disponivel)}</td>
+      <td class="${x.saldo_apos_meta < 0 ? 'neg' : ''}">${fmt(x.saldo_apos_meta)}</td>
+      <td>${pct(x.pct)}</td><td>${gaugeHtml(x.pct)}</td>
+    </tr>`).join('');
+  const t = d.reduce((a, x) => ({ei: a.ei + x.estoque_inicial, m: a.m + x.meta, v: a.v + x.vendido,
+    sd: a.sd + x.saldo_disponivel, sam: a.sam + x.saldo_apos_meta}), {ei:0,m:0,v:0,sd:0,sam:0});
+  document.getElementById('totais').innerHTML =
+    `<td>TOTAL</td><td>${fmt(t.ei)}</td><td>${fmt(t.m)}</td><td>${fmt(t.v)}</td>
+     <td>${fmt(t.sd)}</td><td>${fmt(t.sam)}</td><td>${pct(t.m ? t.v / t.m : null)}</td><td></td>`;
+})();
+</script>
+{% endblock %}

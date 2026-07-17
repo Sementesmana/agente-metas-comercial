@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block titulo %}Gestão de metas{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div>
+    <h1>Gestão de metas</h1>
+    <div class="sub">edição direta na grade (Enter salva) · toda mudança vira versão com histórico</div>
+  </div>
+  <div style="display:flex;gap:10px">
+    {% if admin %}<button class="btn ouro" onclick="abrirCascata()">📦 Cascatear volume</button>{% endif %}
+  </div>
+</div>
+
+{% if not admin %}
+<div class="card" style="border-left:4px solid var(--ouro)">
+  Perfil somente leitura — pra editar metas, entre com a senha de administrador.
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="form-linha">
+    <div><label>Filtrar cultivar</label><input id="fCult" placeholder="ex.: NEO700, O790…"></div>
+    <div><label>&nbsp;</label>
+      <label style="display:flex;align-items:center;gap:8px;font-weight:400;color:var(--texto)">
+        <input type="checkbox" id="fZero" checked style="width:16px"> ocultar linhas sem meta e sem venda
+      </label>
+    </div>
+  </div>
+  <div class="grade-wrap">
+    <table id="grade"></table>
+  </div>
+</div>
+
+<!-- modal cascata -->
+<div class="modal-bg" id="mcBg" style="display:none" onclick="if(event.target===this)fecharCascata()">
+  <div class="modal">
+    <h2>Cascatear volume</h2>
+    <div class="form-linha">
+      <div><label>Cultivar</label><select id="cCult"></select></div>
+      <div><label>Volume (bags)</label><input id="cVol" type="number" min="0" step="1"></div>
+      <div><label>Modo de rateio</label>
+        <select id="cModo">
+          <option value="igual">Igual por cabeça</option>
+          <option value="proporcional">Proporcional à meta atual</option>
+        </select>
+      </div>
+    </div>
+    <div><label>Vendedores alvo</label><div id="cVends" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px;margin-bottom:10px"></div></div>
+    <div><label>Motivo (obrigatório)</label><textarea id="cMotivo" rows="2" placeholder="ex.: 84KA92 encalhada — dividida pro time conforme reunião de 17/07"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <button class="btn" onclick="previewCascata()">Pré-visualizar</button>
+      <button class="btn primario" id="cAplicar" onclick="aplicarCascata()" disabled>Aplicar cascata</button>
+      <button class="btn" onclick="fecharCascata()" style="margin-left:auto">Cancelar</button>
+    </div>
+    <div id="cPreview" style="margin-top:14px"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ADMIN = {{ 'true' if admin else 'false' }};
+let G = null;   // dados da grade
+
+async function carregarGrade() {
+  const j = await apiGet('/api/metas/grade');
+  if (!j || j.status !== 'ok') return;
+  G = j.data;
+  render();
+  // popula modal
+  document.getElementById('cCult').innerHTML = G.cultivares.filter(c => !c.oculta)
+    .sort((a, b) => a.nome.localeCompare(b.nome))
+    .map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+  document.getElementById('cVends').innerHTML = G.vendedores.filter(v => v.ativo)
+    .map(v => `<label style="display:flex;gap:6px;align-items:center;font-weight:400">
+      <input type="checkbox" class="cv" value="${v.id}" checked style="width:15px">${v.nome}</label>`).join('');
+}
+
+function mapaMetas() {
+  const m = {};
+  G.metas.forEach(x => m[x.vendedor_id + ':' + x.cultivar_id] = x.valor);
+  return m;
+}
+function mapaReal() {
+  const m = {};
+  G.realizado.forEach(x => m[x.vendedor_id + ':' + x.cultivar_id] = x.bags);
+  return m;
+}
+
+function render() {
+  const termo = document.getElementById('fCult').value.trim().toUpperCase();
+  const semZero = document.getElementById('fZero').checked;
+  const metas = mapaMetas(), real = mapaReal();
+  const vends = G.vendedores.filter(v => v.ativo);
+  const cults = G.cultivares.filter(c => !c.oculta)
+    .filter(c => !termo || c.nome.toUpperCase().includes(termo))
+    .sort((a, b) => a.nome.localeCompare(b.nome));
+
+  let html = '<thead><tr><th class="fixa">Cultivar</th>' +
+    vends.map(v => `<th title="${v.nome}">${v.nome.split(' ')[0]}</th>`).join('') +
+    '<th>Meta Σ</th><th>Vendido Σ</th></tr></thead><tbody>';
+
+  for (const c of cults) {
+    let metaTot = 0, realTot = 0, tem = false;
+    let cells = '';
+    for (const v of vends) {
+      const k = v.id + ':' + c.id;
+      const m = metas[k] ?? 0, r = real[k] ?? 0;
+      metaTot += m; realTot += r;
+      if (m || r) tem = true;
+      cells += `<td title="vendido: ${fmt2(r)} bags">` + (ADMIN
+        ? `<input class="meta-cell" data-v="${v.id}" data-c="${c.id}" data-orig="${m}" value="${m || ''}"
+             onkeydown="if(event.key==='Enter')salvarCelula(this)" onchange="this.classList.add('mudou')"
+             onblur="salvarCelula(this)">`
+        : (m ? fmt2(m) : '—')) + `</td>`;
+    }
+    if (semZero && !tem) continue;
+    html += `<tr><td class="fixa">${c.nome}</td>${cells}
+      <td><b>${fmt2(metaTot)}</b></td><td>${fmt2(realTot)}</td></tr>`;
+  }
+  html += '</tbody>';
+  document.getElementById('grade').innerHTML = html;
+}
+
+async function salvarCelula(inp) {
+  const val = parseFloat(String(inp.value).replace(',', '.')) || 0;
+  const orig = parseFloat(inp.dataset.orig) || 0;
+  if (Math.abs(val - orig) < 1e-9) { inp.classList.remove('mudou'); return; }
+  const motivo = prompt(`Meta ${orig || 0} → ${val} bags. Motivo da mudança:`, '');
+  if (motivo === null) { inp.value = orig || ''; inp.classList.remove('mudou'); return; }
+  const j = await apiPost('/api/metas', {
+    vendedor_id: +inp.dataset.v, cultivar_id: +inp.dataset.c,
+    valor: val, tipo: 'AJUSTE', motivo: motivo || 'edição na grade',
+  });
+  if (j.status === 'ok') {
+    inp.dataset.orig = val; inp.classList.remove('mudou');
+    avisa('Meta salva (nova versão registrada).');
+    const m = G.metas.find(x => x.vendedor_id == inp.dataset.v && x.cultivar_id == inp.dataset.c);
+    if (m) m.valor = val; else G.metas.push({vendedor_id: +inp.dataset.v, cultivar_id: +inp.dataset.c, valor: val});
+  } else avisa('Erro: ' + j.message);
+}
+
+// ── Cascata ──
+function abrirCascata() { document.getElementById('mcBg').style.display = 'flex'; }
+function fecharCascata() {
+  document.getElementById('mcBg').style.display = 'none';
+  document.getElementById('cPreview').innerHTML = '';
+  document.getElementById('cAplicar').disabled = true;
+}
+function payloadCascata() {
+  return {
+    cultivar_id: +document.getElementById('cCult').value,
+    volume: parseFloat(document.getElementById('cVol').value) || 0,
+    modo: document.getElementById('cModo').value,
+    vendedor_ids: [...document.querySelectorAll('.cv:checked')].map(x => +x.value),
+    motivo: document.getElementById('cMotivo').value.trim(),
+  };
+}
+async function previewCascata() {
+  const p = payloadCascata();
+  if (!p.volume || !p.vendedor_ids.length) { avisa('Informe volume e ao menos 1 vendedor.'); return; }
+  const j = await apiPost('/api/metas/cascata/preview', p);
+  if (j.status !== 'ok') { avisa('Erro: ' + j.message); return; }
+  const nomes = Object.fromEntries(G.vendedores.map(v => [v.id, v.nome]));
+  document.getElementById('cPreview').innerHTML = `
+    <table><thead><tr><th>Vendedor</th><th>Meta atual</th><th>+ Delta</th><th>Meta nova</th></tr></thead>
+    <tbody>${j.plano.map(x => `<tr><td>${nomes[x.vendedor_id]}</td><td>${fmt2(x.antes)}</td>
+      <td class="pos">+${fmt2(x.delta)}</td><td><b>${fmt2(x.depois)}</b></td></tr>`).join('')}</tbody></table>`;
+  document.getElementById('cAplicar').disabled = false;
+}
+async function aplicarCascata() {
+  const p = payloadCascata();
+  if (!p.motivo) { avisa('Motivo é obrigatório pra aplicar.'); return; }
+  const j = await apiPost('/api/metas/cascata', p);
+  if (j.status === 'ok') { avisa('Cascata aplicada — versões novas registradas.'); fecharCascata(); carregarGrade(); }
+  else avisa('Erro: ' + j.message);
+}
+
+document.getElementById('fCult').oninput = render;
+document.getElementById('fZero').onchange = render;
+carregarGrade();
+</script>
+{% endblock %}

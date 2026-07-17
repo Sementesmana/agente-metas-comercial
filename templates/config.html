@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block titulo %}Config{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div>
+    <h1>Configurações</h1>
+    <div class="sub">vendedores (data de contratação, ativo) · cultivares (ocultar) · histórico de sync</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Vendedores</h2>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>Nome (SA)</th><th>Nome exibição</th><th>Data contratação</th><th>Tempo de casa</th><th>Ativo</th></tr></thead>
+    <tbody id="tVends"></tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Cultivares</h2>
+  <div style="overflow-x:auto;max-height:50vh">
+  <table>
+    <thead><tr><th>Cultivar</th><th>Oculta no painel</th></tr></thead>
+    <tbody id="tCults"></tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Histórico de sincronizações</h2>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>#</th><th>Início</th><th>Fim</th><th>Status</th><th>Resumo</th></tr></thead>
+    <tbody id="tRuns"></tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ADMIN = {{ 'true' if admin else 'false' }};
+
+async function carregar() {
+  const [v, g, s] = await Promise.all([
+    apiGet('/api/vendedores'), apiGet('/api/metas/grade'), apiGet('/api/sync/status'),
+  ]);
+  if (v && v.status === 'ok') {
+    document.getElementById('tVends').innerHTML = v.data.map(x => `
+      <tr>
+        <td>${x.nome_sa}</td>
+        <td>${ADMIN ? `<input value="${x.nome_exibicao ?? ''}" style="min-width:160px"
+              onchange="salvarVend(${x.id}, {nome_exibicao: this.value})">` : (x.nome_exibicao ?? '—')}</td>
+        <td>${ADMIN ? `<input type="date" value="${x.data_contratacao ?? ''}" style="width:150px"
+              onchange="salvarVend(${x.id}, {data_contratacao: this.value || null})">` : (x.data_contratacao ?? '—')}</td>
+        <td style="color:var(--texto-leve)">${tempoDeCasa(x.data_contratacao) ?? '—'}</td>
+        <td>${ADMIN ? `<input type="checkbox" ${x.ativo ? 'checked' : ''} style="width:16px"
+              onchange="salvarVend(${x.id}, {ativo: this.checked})">` : (x.ativo ? 'sim' : 'não')}</td>
+      </tr>`).join('');
+  }
+  if (g && g.status === 'ok') {
+    document.getElementById('tCults').innerHTML = g.data.cultivares
+      .sort((a, b) => a.nome.localeCompare(b.nome)).map(c => `
+      <tr><td>${c.nome}</td>
+        <td>${ADMIN ? `<input type="checkbox" ${c.oculta ? 'checked' : ''} style="width:16px"
+              onchange="salvarCult(${c.id}, this.checked)">` : (c.oculta ? 'sim' : 'não')}</td></tr>`).join('');
+  }
+  if (s && s.status === 'ok') {
+    document.getElementById('tRuns').innerHTML = s.runs.map(r => `
+      <tr><td>${r.id}</td><td>${(r.inicio ?? '').slice(0, 16)}</td><td>${(r.fim ?? '—').slice(0, 16)}</td>
+      <td><span class="badge ${r.status === 'OK' ? 'ok' : (r.status === 'ERRO' ? 'low' : 'mid')}">${r.status}${r.etapa ? ' · ' + r.etapa : ''}</span></td>
+      <td style="text-align:left;font-size:12px;color:var(--texto-leve)">${JSON.stringify(r.resumo)}</td></tr>`).join('');
+  }
+}
+async function salvarVend(id, body) {
+  const j = await apiPost('/api/vendedores/' + id, body);
+  avisa(j.status === 'ok' ? 'Salvo.' : 'Erro: ' + j.message);
+}
+async function salvarCult(id, oculta) {
+  const j = await apiPost('/api/cultivares/' + id, {oculta});
+  avisa(j.status === 'ok' ? 'Salvo.' : 'Erro: ' + j.message);
+}
+carregar();
+</script>
+{% endblock %}

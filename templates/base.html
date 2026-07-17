@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block titulo %}Metas Comerciais{% endblock %} · Sementes Maná</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mana.css') }}">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.14.1/cdn.min.js"></script>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="marca">Sementes Maná<small>CPM Comercial · {{ safra }}</small></div>
+    <nav>
+      <a href="/painel"      class="{{ 'ativo' if pagina=='visao' }}">Visão geral</a>
+      <a href="/consolidado" class="{{ 'ativo' if pagina=='consolidado' }}">Consolidado</a>
+      <a href="/metas"       class="{{ 'ativo' if pagina=='metas' }}">Gestão de metas</a>
+      <a href="/timeline"    class="{{ 'ativo' if pagina=='timeline' }}">Linha do tempo</a>
+      <a href="/config"      class="{{ 'ativo' if pagina=='config' }}">Config</a>
+    </nav>
+    <div class="rodape">agente-metas-comercial<br>realizado = espelho do agente-estoque</div>
+  </aside>
+  <main class="conteudo">
+    {% block conteudo %}{% endblock %}
+  </main>
+</div>
+<script>
+const fmt  = n => Number(n ?? 0).toLocaleString('pt-BR', {maximumFractionDigits: 0});
+const fmt2 = n => Number(n ?? 0).toLocaleString('pt-BR', {maximumFractionDigits: 2});
+const pct  = p => p == null ? '—' : (p * 100).toLocaleString('pt-BR', {maximumFractionDigits: 1}) + '%';
+const gaugeCls = p => p == null ? 'low' : (p > 1.0001 ? 'over' : (p < 0.4 ? 'low' : ''));
+const badgeCls = p => p == null ? 'low' : (p > 1.0001 ? 'over' : (p >= 1 ? 'ok' : (p < 0.4 ? 'low' : 'mid')));
+const gaugeHtml = p => {
+  const w = p == null ? 0 : Math.min(p, 1.25) / 1.25 * 100;
+  return `<div class="gauge ${gaugeCls(p)}"><div class="fill" style="width:${w}%"></div></div>`;
+};
+async function apiGet(url) {
+  const r = await fetch(url);
+  if (r.status === 401) { location.href = '/login?next=' + encodeURIComponent(location.pathname); return null; }
+  return r.json();
+}
+async function apiPost(url, body) {
+  const r = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'},
+                              body: JSON.stringify(body || {})});
+  return r.json();
+}
+function avisa(msg) {
+  const d = document.createElement('div');
+  d.className = 'msg-flutuante'; d.textContent = msg;
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 3500);
+}
+function tempoDeCasa(dataStr) {
+  if (!dataStr) return null;
+  const d = new Date(dataStr + 'T00:00:00');
+  if (isNaN(d)) return null;
+  const meses = Math.floor((Date.now() - d.getTime()) / (30.44 * 24 * 3600 * 1000));
+  return meses < 1 ? 'menos de 1 mês' : (meses === 1 ? '1 mês' : meses + ' meses');
+}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

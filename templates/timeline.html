@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block titulo %}Linha do tempo{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div>
+    <h1>Por que mudou</h1>
+    <div class="sub">eventos do realizado (pedidos) + versões de meta, mais recente primeiro</div>
+  </div>
+  <div>
+    <select id="filtro" style="width:auto">
+      <option value="">Tudo</option>
+      <option value="REALIZADO">Só realizado</option>
+      <option value="META">Só metas</option>
+    </select>
+  </div>
+</div>
+<div class="feed" id="feed"></div>
+{% endblock %}
+{% block scripts %}
+<script>
+let FEED = [];
+function render() {
+  const f = document.getElementById('filtro').value;
+  const itens = FEED.filter(x => !f || x.origem === f);
+  document.getElementById('feed').innerHTML = itens.length ? itens.map(x => `
+    <div class="item ${x.origem === 'META' ? 'meta' : ''} ${x.delta < 0 ? 'neg' : ''}">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <strong>${x.origem === 'META' ? '🎯' : (x.delta < 0 ? '🔻' : '🟢')} ${x.tipo}
+          · ${x.vendedor} · ${x.cultivar}</strong>
+        <span class="quando">${x.quando.slice(0, 16).replace('T', ' ')}</span>
+      </div>
+      <div class="detalhe">${x.origem === 'REALIZADO' ? (x.delta > 0 ? '+' : '') + fmt2(x.delta) + ' bags · ' : ''}${x.detalhe}</div>
+    </div>`).join('')
+    : '<div class="card">Nenhum evento ainda — os eventos nascem a partir do 2º sync (diff entre snapshots).</div>';
+}
+(async () => {
+  const j = await apiGet('/api/timeline?limite=300');
+  if (j && j.status === 'ok') { FEED = j.data; render(); }
+})();
+document.getElementById('filtro').onchange = render;
+</script>
+{% endblock %}

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login · Metas Comerciais Maná</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mana.css') }}">
+</head>
+<body>
+<div class="login-box">
+  <h1>CPM Comercial</h1>
+  <p>Metas por vendedor e cultivar · Sementes Maná</p>
+  <form method="post">
+    <label>Senha</label>
+    <input type="password" name="senha" autofocus autocomplete="current-password">
+    <button class="btn primario" style="margin-top:14px;width:100%">Entrar</button>
+    {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
+  </form>
+</div>
+</body>
+</html>

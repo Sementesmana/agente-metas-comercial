@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block titulo %}Visão geral{% endblock %}
+{% block conteudo %}
+<div class="topo">
+  <div>
+    <h1>Metas e atingimento</h1>
+    <div class="sub" id="subSync">carregando…</div>
+  </div>
+  <div style="display:flex;gap:10px">
+    {% if admin %}<button class="btn ouro" id="btnSync">⟳ Atualizar agora</button>{% endif %}
+  </div>
+</div>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="card">
+  <h2>Ranking de vendedores</h2>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr>
+      <th>Vendedor</th><th>Tempo de casa</th><th>Vendido</th><th>Meta</th>
+      <th>Falta</th><th>% Ating.</th><th style="width:160px">Progresso</th>
+    </tr></thead>
+    <tbody id="ranking"></tbody>
+  </table>
+  </div>
+</div>
+
+<!-- modal detalhe do vendedor -->
+<div class="modal-bg" id="modalBg" style="display:none" onclick="if(event.target===this)fecharModal()">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <h2 id="mTitulo">—</h2>
+      <button class="btn" onclick="fecharModal()">Fechar</button>
+    </div>
+    <div class="sub" id="mSub" style="color:var(--texto-leve);font-size:13px;margin-bottom:10px"></div>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Cultivar</th><th>Vendido</th><th>Meta</th><th>Falta</th><th>%</th><th style="width:120px"></th></tr></thead>
+      <tbody id="mLinhas"></tbody>
+      <tfoot><tr id="mTotais"></tr></tfoot>
+    </table>
+    </div>
+    <h2 style="font-size:15px;margin-top:16px">Pedidos no snapshot</h2>
+    <div style="overflow-x:auto;max-height:280px">
+    <table>
+      <thead><tr><th>Pedido</th><th>Data</th><th>Cliente</th><th>Cultivar</th><th>Bags</th><th>Status</th></tr></thead>
+      <tbody id="mPedidos"></tbody>
+    </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function carregar() {
+  const j = await apiGet('/api/dashboard');
+  if (!j || j.status !== 'ok') return;
+  const d = j.data;
+  document.getElementById('subSync').textContent =
+    d.ultimo_sync ? ('último sync: ' + d.ultimo_sync.slice(0, 16).replace('T', ' ')) : 'nenhum sync ainda — clique em Atualizar agora';
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="lbl">Meta total</div><div class="val">${fmt(d.kpis.meta_total)} <small>bags</small></div></div>
+    <div class="kpi"><div class="lbl">Vendido</div><div class="val">${fmt(d.kpis.vendido_total)} <small>bags</small></div></div>
+    <div class="kpi"><div class="lbl">Atingimento geral</div><div class="val" style="color:var(--ouro)">${pct(d.kpis.pct_geral)}</div></div>
+    <div class="kpi"><div class="lbl">Vendedores</div><div class="val">${d.ranking.length}</div></div>`;
+  document.getElementById('ranking').innerHTML = d.ranking.map(r => `
+    <tr class="clicavel" onclick="abrirVendedor(${r.vendedor_id})">
+      <td>${r.nome}</td>
+      <td style="color:var(--texto-leve)">${tempoDeCasa(r.data_contratacao) ?? '—'}</td>
+      <td>${fmt(r.vendido)}</td><td>${fmt(r.meta)}</td><td>${fmt(r.falta)}</td>
+      <td><span class="badge ${badgeCls(r.pct)}">${pct(r.pct)}</span></td>
+      <td>${gaugeHtml(r.pct)}</td>
+    </tr>`).join('');
+}
+
+async function abrirVendedor(id) {
+  const j = await apiGet('/api/vendedor/' + id);
+  if (!j || j.status !== 'ok') return;
+  const d = j.data;
+  document.getElementById('mTitulo').textContent = d.vendedor.nome;
+  document.getElementById('mSub').textContent =
+    (d.vendedor.data_contratacao ? ('contratado em ' + d.vendedor.data_contratacao + ' · ' + tempoDeCasa(d.vendedor.data_contratacao)) : 'data de contratação não cadastrada');
+  document.getElementById('mLinhas').innerHTML = d.linhas.map(l => `
+    <tr><td>${l.cultivar}</td><td>${fmt(l.vendido)}</td><td>${fmt(l.meta)}</td>
+    <td class="${l.falta < 0 ? 'pos' : ''}">${l.falta < 0 ? '+' + fmt(-l.falta) : fmt(l.falta)}</td>
+    <td>${pct(l.pct)}</td><td>${gaugeHtml(l.pct)}</td></tr>`).join('');
+  const tm = d.totais.meta, tv = d.totais.vendido;
+  document.getElementById('mTotais').innerHTML =
+    `<td>TOTAL</td><td>${fmt(tv)}</td><td>${fmt(tm)}</td><td>${fmt(Math.max(tm - tv, 0))}</td>
+     <td>${pct(tm ? tv / tm : null)}</td><td></td>`;
+  document.getElementById('mPedidos').innerHTML = d.pedidos.map(p => `
+    <tr style="${p.incluido ? '' : 'opacity:.45'}">
+      <td>${p.numpedido}</td><td>${p.data ?? '—'}</td><td style="text-align:left">${p.cliente}</td>
+      <td style="text-align:left">${p.cultivar_norm}</td><td>${fmt2(p.bags)}</td>
+      <td style="text-align:left">${p.status_raw}${p.incluido ? '' : ' (fora do funil)'}</td>
+    </tr>`).join('');
+  document.getElementById('modalBg').style.display = 'flex';
+}
+function fecharModal() { document.getElementById('modalBg').style.display = 'none'; }
+
+const btn = document.getElementById('btnSync');
+if (btn) btn.onclick = async () => {
+  btn.disabled = true; btn.textContent = 'Sincronizando…';
+  await apiPost('/api/sync');
+  avisa('Sincronização iniciada — a tela atualiza sozinha ao concluir.');
+  const poll = setInterval(async () => {
+    const s = await apiGet('/api/sync/status');
+    if (s && !s.rodando) {
+      clearInterval(poll); btn.disabled = false; btn.textContent = '⟳ Atualizar agora';
+      carregar(); avisa('Dados atualizados.');
+    }
+  }, 4000);
+};
+
+carregar();
+</script>
+{% endblock %}
