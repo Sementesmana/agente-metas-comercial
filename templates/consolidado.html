@@ -12,13 +12,20 @@
     <div id="avisoEstoque" style="display:none;color:var(--vermelho);font-size:13px">
       ⚠️ agente-estoque indisponível — colunas de estoque zeradas (o vendido continua correto).
     </div>
-    <input class="busca-input" id="qCult" placeholder="🔎 Buscar cultivar…">
+    <div id="mselCult"></div>
   </div>
   <div style="overflow-x:auto">
-  <table>
+  <table id="tblCons">
     <thead><tr>
-      <th style="width:40px"></th><th>Cultivar</th><th>Estoque inicial</th><th>Meta total</th><th>Vendido</th>
-      <th>Saldo disponível</th><th>Saldo após meta</th><th>% Ating.</th><th style="width:150px">Progresso</th>
+      <th style="width:40px"></th>
+      <th data-key="cultivar" data-tipo="str">Cultivar</th>
+      <th data-key="estoque_inicial">Estoque inicial</th>
+      <th data-key="meta">Meta total</th>
+      <th data-key="vendido">Vendido</th>
+      <th data-key="saldo_disponivel">Saldo disponível</th>
+      <th data-key="saldo_apos_meta">Saldo após meta</th>
+      <th data-key="pct">% Ating.</th>
+      <th style="width:150px">Progresso</th>
     </tr></thead>
     <tbody id="linhas"></tbody>
     <tfoot><tr id="totais"></tr></tfoot>
@@ -29,18 +36,23 @@
 {% block scripts %}
 <script>
 let DADOS = [];
+let MSEL = null;
+const SORT = {key: 'cultivar', dir: 'asc', tipo: 'str'};
 
 async function carregar() {
   const j = await apiGet('/api/consolidado');
   if (!j || j.status !== 'ok') return;
   if (!j.estoque_ok) document.getElementById('avisoEstoque').style.display = 'block';
   DADOS = j.data;
+  if (!MSEL) MSEL = criarMsel('mselCult', 'Cultivares',
+    DADOS.map(x => ({val: x.cultivar_id, txt: x.cultivar})), render);
   render();
 }
 
 function render() {
-  const termo = (document.getElementById('qCult').value || '').trim().toUpperCase();
-  const d = DADOS.filter(x => !termo || x.cultivar.toUpperCase().includes(termo));
+  const sel = MSEL ? MSEL.selecionados() : new Set();
+  let d = DADOS.filter(x => sel.size === 0 || sel.has(x.cultivar_id));
+  d = ordenar(d, SORT);
   document.getElementById('linhas').innerHTML = d.map(x => `
     <tr id="crow-${x.cultivar_id}">
       <td><button class="btn-mais" onclick="toggleCultivar(${x.cultivar_id}, this)">+</button></td>
@@ -96,7 +108,7 @@ async function toggleCultivar(id, btn) {
   row.after(det);
 }
 
-document.getElementById('qCult').oninput = render;
+ligarOrdenacao(document.querySelector('#tblCons thead'), SORT, render);
 carregar();
 </script>
 {% endblock %}

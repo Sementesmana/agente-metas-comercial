@@ -86,6 +86,78 @@ function avisa(msg) {
   document.body.appendChild(d);
   setTimeout(() => d.remove(), 3500);
 }
+// ── Multi-select com checkboxes (padrão estoque): Todas/Limpar + busca interna ──
+function criarMsel(elId, rotulo, itens, onChange) {
+  const el = document.getElementById(elId);
+  el.className = 'msel';
+  const sel = new Set();   // vazio = todas
+  el.innerHTML = `
+    <button type="button" class="msel-btn"></button>
+    <div class="msel-panel">
+      <input class="msel-busca" placeholder="Buscar…">
+      <div class="msel-acoes">
+        <button type="button" data-a="todas">✓ Todas</button>
+        <button type="button" data-a="limpar">✕ Limpar</button>
+      </div>
+      <div class="msel-lista"></div>
+    </div>`;
+  const btn = el.querySelector('.msel-btn'), panel = el.querySelector('.msel-panel');
+  const busca = el.querySelector('.msel-busca'), lista = el.querySelector('.msel-lista');
+  function rotular() {
+    btn.textContent = sel.size === 0 ? `${rotulo}: Todas (${itens.length})`
+      : `${rotulo}: ${sel.size} selecionada${sel.size > 1 ? 's' : ''}`;
+  }
+  function renderLista() {
+    const t = busca.value.trim().toUpperCase();
+    lista.innerHTML = itens
+      .filter(i => !t || i.txt.toUpperCase().includes(t))
+      .map(i => `<label><input type="checkbox" value="${i.val}" ${sel.has(i.val) ? 'checked' : ''}>${i.txt}</label>`)
+      .join('');
+  }
+  btn.onclick = (e) => { e.stopPropagation(); el.classList.toggle('aberto'); renderLista(); };
+  panel.onclick = (e) => e.stopPropagation();
+  busca.oninput = renderLista;
+  el.querySelector('[data-a=todas]').onclick = () => { sel.clear(); rotular(); renderLista(); onChange(); };
+  el.querySelector('[data-a=limpar]').onclick = () => { sel.clear(); itens.forEach(i => sel.add(i.val)); sel.clear(); rotular(); renderLista(); onChange(); };
+  lista.onchange = (e) => {
+    const v = isNaN(+e.target.value) ? e.target.value : +e.target.value;
+    e.target.checked ? sel.add(v) : sel.delete(v);
+    rotular(); onChange();
+  };
+  document.addEventListener('click', () => el.classList.remove('aberto'));
+  rotular();
+  return { selecionados: () => sel, setItens: (novos) => { itens = novos; rotular(); } };
+}
+
+// ── Ordenação por coluna: 1º clique desc (maior→menor), 2º asc; texto A-Z/Z-A ──
+function ligarOrdenacao(theadEl, sortState, renderFn) {
+  theadEl.querySelectorAll('th[data-key]').forEach(th => {
+    th.onclick = () => {
+      const key = th.dataset.key, tipo = th.dataset.tipo || 'num';
+      if (sortState.key === key) sortState.dir = sortState.dir === 'desc' ? 'asc' : 'desc';
+      else { sortState.key = key; sortState.dir = tipo === 'str' ? 'asc' : 'desc'; }
+      sortState.tipo = tipo;
+      theadEl.querySelectorAll('th[data-key]').forEach(x => x.classList.remove('asc', 'desc'));
+      th.classList.add(sortState.dir);
+      renderFn();
+    };
+  });
+  const th0 = theadEl.querySelector(`th[data-key="${sortState.key}"]`);
+  if (th0) th0.classList.add(sortState.dir);
+}
+function ordenar(arr, s) {
+  if (!s.key) return arr;
+  const m = s.dir === 'asc' ? 1 : -1;
+  return [...arr].sort((a, b) => {
+    const va = a[s.key], vb = b[s.key];
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;           // nulos sempre no fim
+    if (vb == null) return -1;
+    if (s.tipo === 'str') return m * String(va).localeCompare(String(vb), 'pt-BR');
+    return m * ((+va) - (+vb));
+  });
+}
+
 function tempoDeCasa(dataStr) {
   if (!dataStr) return null;
   const d = new Date(dataStr + 'T00:00:00');

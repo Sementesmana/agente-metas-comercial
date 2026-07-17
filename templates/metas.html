@@ -19,7 +19,7 @@
 
 <div class="card">
   <div class="form-linha">
-    <div><label>Filtrar cultivar</label><input id="fCult" placeholder="ex.: NEO700, O790…"></div>
+    <div><label>Cultivares</label><div id="mselCultG"></div></div>
     <div><label>&nbsp;</label>
       <label style="display:flex;align-items:center;gap:8px;font-weight:400;color:var(--texto)">
         <input type="checkbox" id="fZero" checked style="width:16px"> ocultar linhas sem meta e sem venda
@@ -61,11 +61,15 @@
 <script>
 const ADMIN = {{ 'true' if admin else 'false' }};
 let G = null;   // dados da grade
+let MSELG = null;
 
 async function carregarGrade() {
   const j = await apiGet('/api/metas/grade');
   if (!j || j.status !== 'ok') return;
   G = j.data;
+  if (!MSELG) MSELG = criarMsel('mselCultG', 'Cultivares',
+    G.cultivares.filter(c => !c.oculta).sort((a, b) => a.nome.localeCompare(b.nome))
+      .map(c => ({val: c.id, txt: c.nome})), render);
   render();
   // popula modal
   document.getElementById('cCult').innerHTML = G.cultivares.filter(c => !c.oculta)
@@ -88,12 +92,12 @@ function mapaReal() {
 }
 
 function render() {
-  const termo = document.getElementById('fCult').value.trim().toUpperCase();
+  const sel = MSELG ? MSELG.selecionados() : new Set();
   const semZero = document.getElementById('fZero').checked;
   const metas = mapaMetas(), real = mapaReal();
   const vends = G.vendedores.filter(v => v.ativo);
   const cults = G.cultivares.filter(c => !c.oculta)
-    .filter(c => !termo || c.nome.toUpperCase().includes(termo))
+    .filter(c => sel.size === 0 || sel.has(c.id))
     .sort((a, b) => a.nome.localeCompare(b.nome));
 
   let html = '<thead><tr><th class="fixa">Cultivar</th>' +
@@ -176,7 +180,6 @@ async function aplicarCascata() {
   else avisa('Erro: ' + j.message);
 }
 
-document.getElementById('fCult').oninput = render;
 document.getElementById('fZero').onchange = render;
 carregarGrade();
 </script>

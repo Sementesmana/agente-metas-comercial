@@ -16,13 +16,19 @@
 <div class="card">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
     <h2 style="margin:0">Ranking de vendedores</h2>
-    <input class="busca-input" id="qVend" placeholder="🔎 Buscar vendedor…">
+    <div id="mselVend"></div>
   </div>
   <div style="overflow-x:auto">
-  <table>
+  <table id="tblRank">
     <thead><tr>
-      <th style="width:40px"></th><th>Vendedor</th><th>Tempo de casa</th><th>Vendido</th><th>Meta</th>
-      <th>Falta</th><th>% Ating.</th><th style="width:160px">Progresso</th>
+      <th style="width:40px"></th>
+      <th data-key="nome" data-tipo="str">Vendedor</th>
+      <th data-key="data_contratacao" data-tipo="str">Tempo de casa</th>
+      <th data-key="vendido">Vendido</th>
+      <th data-key="meta">Meta</th>
+      <th data-key="falta">Falta</th>
+      <th data-key="pct">% Ating.</th>
+      <th style="width:160px">Progresso</th>
     </tr></thead>
     <tbody id="ranking"></tbody>
   </table>
@@ -33,6 +39,8 @@
 {% block scripts %}
 <script>
 let RANK = [];
+let MSEL = null;
+const SORT = {key: 'pct', dir: 'desc', tipo: 'num'};
 
 async function carregar() {
   const j = await apiGet('/api/dashboard');
@@ -47,12 +55,16 @@ async function carregar() {
     <div class="kpi"><div class="ico azul">📈</div><div class="val azul">${pct(d.kpis.pct_geral)}</div><div class="lbl">Atingimento Geral</div></div>
     <div class="kpi"><div class="ico ouro">👥</div><div class="val ouro">${vends.length}</div><div class="lbl">Vendedores</div></div>`;
   RANK = d.ranking;
+  if (!MSEL) MSEL = criarMsel('mselVend', 'Vendedores',
+    vends.map(r => ({val: r.vendedor_id, txt: r.nome})), render);
   render();
 }
 
 function render() {
-  const termo = (document.getElementById('qVend').value || '').trim().toUpperCase();
-  const linhas = RANK.filter(r => !termo || r.nome.toUpperCase().includes(termo));
+  const sel = MSEL ? MSEL.selecionados() : new Set();
+  let linhas = RANK.filter(r => sel.size === 0
+    ? true : (r.vendedor_id != null && sel.has(r.vendedor_id)));
+  linhas = ordenar(linhas, SORT);
   document.getElementById('ranking').innerHTML = linhas.map(r => `
     <tr id="row-${r.vendedor_id}">
       <td>${r.vendedor_id != null ? `<button class="btn-mais" onclick="toggleVendedor(${r.vendedor_id}, this)">+</button>` : ''}</td>
@@ -104,7 +116,7 @@ async function toggleVendedor(id, btn) {
   row.after(det);
 }
 
-document.getElementById('qVend').oninput = render;
+ligarOrdenacao(document.querySelector('#tblRank thead'), SORT, render);
 
 const btn = document.getElementById('btnSync');
 if (btn) btn.onclick = async () => {
