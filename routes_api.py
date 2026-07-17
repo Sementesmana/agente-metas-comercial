@@ -25,6 +25,11 @@ api = Blueprint("api", __name__, url_prefix="/api")
 _sync_thread = {"t": None}
 
 
+def _safra_req() -> str:
+    """Safra selecionada no painel (?safra=) ou a marcada como atual."""
+    return (request.args.get("safra") or "").strip() or safra_atual()
+
+
 # ── Sync ──────────────────────────────────────────────────────────────────────
 
 @api.post("/sync")
@@ -66,45 +71,49 @@ def api_sync_status():
 @api.get("/dashboard")
 @requer_leitura
 def api_dashboard():
-    data = cache.get("dashboard")
+    safra = _safra_req()
+    data = cache.get(f"dashboard:{safra}")
     if data is None:
         with db_conn() as conn:
-            data = cache.set("dashboard", visao_dashboard(conn, safra_atual()))
+            data = cache.set(f"dashboard:{safra}", visao_dashboard(conn, safra))
     return jsonify({"status": "ok", "data": data})
 
 
 @api.get("/vendedor/<int:vendedor_id>")
 @requer_leitura
 def api_vendedor(vendedor_id):
-    key = f"vendedor:{vendedor_id}"
+    safra = _safra_req()
+    key = f"vendedor:{safra}:{vendedor_id}"
     data = cache.get(key)
     if data is None:
         with db_conn() as conn:
-            data = cache.set(key, visao_vendedor(conn, safra_atual(), vendedor_id))
+            data = cache.set(key, visao_vendedor(conn, safra, vendedor_id))
     return jsonify({"status": "ok", "data": data})
 
 
 @api.get("/consolidado")
 @requer_leitura
 def api_consolidado():
-    payload = cache.get("consolidado")
+    safra = _safra_req()
+    payload = cache.get(f"consolidado:{safra}")
     if payload is None:
         estoque_map = fetch_estoque_map()
         with db_conn() as conn:
-            data = visao_consolidado(conn, safra_atual(), estoque_map)
-        payload = cache.set("consolidado", {"data": data, "estoque_ok": bool(estoque_map)})
+            data = visao_consolidado(conn, safra, estoque_map)
+        payload = cache.set(f"consolidado:{safra}", {"data": data, "estoque_ok": bool(estoque_map)})
     return jsonify({"status": "ok", **payload})
 
 
 @api.get("/timeline")
 @requer_leitura
 def api_timeline():
+    safra = _safra_req()
     limite = min(int(request.args.get("limite", 200)), 500)
-    key = f"timeline:{limite}"
+    key = f"timeline:{safra}:{limite}"
     data = cache.get(key)
     if data is None:
         with db_conn() as conn:
-            data = cache.set(key, timeline(conn, safra_atual(), limite))
+            data = cache.set(key, timeline(conn, safra, limite))
     return jsonify({"status": "ok", "data": data})
 
 
@@ -113,14 +122,15 @@ def api_timeline():
 @api.get("/metas/grade")
 @requer_leitura
 def api_metas_grade():
-    data = cache.get("grade")
+    safra = _safra_req()
+    data = cache.get(f"grade:{safra}")
     if data is None:
         with db_conn() as conn:
             vendedores, cultivares = _cadastros(conn)
-            metas = metas_vigentes(conn, safra_atual())
-            run = ultimo_run_ok(conn)
+            metas = metas_vigentes(conn, safra)
+            run = ultimo_run_ok(conn, safra)
             realizado = realizado_por_vendedor_cultivar(conn, run["id"]) if run else {}
-        data = cache.set("grade", {
+        data = cache.set(f"grade:{safra}", {
             "vendedores": [
                 {"id": vid, "nome": v.get("nome_exibicao") or v["nome_sa"], "ativo": v["ativo"]}
                 for vid, v in vendedores.items()
@@ -150,7 +160,7 @@ def api_gravar_meta():
         return jsonify({"status": "error", "message": f"campos obrigatórios: {campos}"}), 400
     with db_conn() as conn:
         vid = gravar_meta(
-            conn, safra_atual(), int(p["vendedor_id"]), int(p["cultivar_id"]),
+            conn, _safra_req(), int(p["vendedor_id"]), int(p["cultivar_id"]),
             float(p["valor"]), p.get("tipo", "AJUSTE"),
             (p.get("motivo") or "").strip() or "edição manual", usuario_atual(),
         )
@@ -183,7 +193,7 @@ def _cascata(preview: bool):
     if not preview and not motivo:
         return jsonify({"status": "error", "message": "motivo é obrigatório pra aplicar"}), 400
     with db_conn() as conn:
-        plano = cascatear(conn, safra_atual(), int(cultivar_id), float(volume),
+        plano = cascatear(conn, _safra_req(), int(cultivar_id), float(volume),
                           alvos, modo, motivo, usuario_atual(),
                           manual=p.get("manual"), preview=preview)
     if not preview:
@@ -205,7 +215,7 @@ def api_metas_historico():
         JOIN cultivares c ON c.id = mv.cultivar_id
         WHERE mv.safra = %s
     """
-    params = [safra_atual()]
+    params = [_safra_req()]
     if vend:
         sql += " AND mv.vendedor_id=%s"
         params.append(int(vend))
@@ -265,5 +275,56 @@ def api_cultivar_update(cid):
     with db_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(f"UPDATE cultivares SET {', '.join(sets)} WHERE id=%s", params)
+    cache.invalidate()
+    return jsonify({"status": "ok"})
+
+
+# ── Safras (cadastro/seletor) ─────────────────────────────────────────────────
+
+@api.get("/safras")
+@requer_leitura
+def api_safras():
+    with db_conn() as conn, dict_cur(conn) as cur:
+        cur.execute("SELECT id, label, sa_safra_id, atual FROM safras ORDER BY label DESC")
+        return jsonify({"status": "ok", "data": [dict(r) for r in cur.fetchall()],
+                        "atual": safra_atual()})
+
+
+@api.post("/safras")
+@requer_admin
+def api_safra_criar():
+    p = request.get_json(force=True)
+    label = (p.get("label") or "").strip()
+    sa_id = (p.get("sa_safra_id") or "").strip()
+    if not label:
+        return jsonify({"status": "error", "message": "label é obrigatório"}), 400
+    with db_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO safras (label, sa_safra_id, atual) VALUES (%s, %s, FALSE)
+                ON CONFLICT (label) DO UPDATE SET sa_safra_id = EXCLUDED.sa_safra_id
+                RETURNING id
+            """, (label, sa_id or None))
+            sid = cur.fetchone()[0]
+    cache.invalidate()
+    return jsonify({"status": "ok", "id": sid})
+
+
+@api.post("/safras/<int:sid>")
+@requer_admin
+def api_safra_update(sid):
+    p = request.get_json(force=True)
+    with db_conn() as conn:
+        with conn.cursor() as cur:
+            if p.get("atual"):
+                # só UMA safra atual — o sync/cron passa a rodar pra ela
+                cur.execute("UPDATE safras SET atual=FALSE WHERE atual")
+                cur.execute("UPDATE safras SET atual=TRUE WHERE id=%s", (sid,))
+            if "sa_safra_id" in p:
+                cur.execute("UPDATE safras SET sa_safra_id=%s WHERE id=%s",
+                            ((p["sa_safra_id"] or "").strip() or None, sid))
+            if "label" in p and (p["label"] or "").strip():
+                cur.execute("UPDATE safras SET label=%s WHERE id=%s",
+                            (p["label"].strip(), sid))
     cache.invalidate()
     return jsonify({"status": "ok"})

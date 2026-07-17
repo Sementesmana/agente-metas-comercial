@@ -12,7 +12,8 @@
 <body>
 <div class="shell">
   <aside class="sidebar">
-    <div class="marca">Sementes Maná<small>CPM Comercial · {{ safra }}</small></div>
+    <div class="marca">Sementes Maná<small>CPM Comercial</small></div>
+    <select id="selSafra" style="margin-top:10px;background:rgba(255,255,255,.12);color:#fff;border-color:transparent;font-size:13px"></select>
     <nav>
       <a href="/painel"      class="{{ 'ativo' if pagina=='visao' }}">Visão geral</a>
       <a href="/consolidado" class="{{ 'ativo' if pagina=='consolidado' }}">Consolidado</a>
@@ -27,16 +28,38 @@
   </main>
 </div>
 <script>
-// Embed no SE (iframe bloqueia cookie de terceiro): se veio ?senha= na URL,
-// propaga em TODAS as chamadas de API e nos links do menu — auth sem cookie.
-const SENHA_URL = new URLSearchParams(location.search).get('senha');
+// Params propagados em TODAS as chamadas de API e links do menu:
+// - senha (embed no SE: iframe bloqueia cookie de terceiro)
+// - safra (seletor de safra — default: safra atual do cadastro)
+const _qs = new URLSearchParams(location.search);
+const SENHA_URL = _qs.get('senha');
+const SAFRA_URL = _qs.get('safra');
 function comSenha(url) {
-  if (!SENHA_URL) return url;
-  return url + (url.includes('?') ? '&' : '?') + 'senha=' + encodeURIComponent(SENHA_URL);
+  const extra = [];
+  if (SENHA_URL) extra.push('senha=' + encodeURIComponent(SENHA_URL));
+  if (SAFRA_URL) extra.push('safra=' + encodeURIComponent(SAFRA_URL));
+  if (!extra.length) return url;
+  return url + (url.includes('?') ? '&' : '?') + extra.join('&');
 }
-document.addEventListener('DOMContentLoaded', () => {
-  if (SENHA_URL) document.querySelectorAll('.sidebar nav a')
+document.addEventListener('DOMContentLoaded', async () => {
+  if (SENHA_URL || SAFRA_URL) document.querySelectorAll('.sidebar nav a')
     .forEach(a => a.href = comSenha(a.getAttribute('href')));
+  // seletor de safra
+  const sel = document.getElementById('selSafra');
+  if (sel) {
+    const j = await apiGet('/api/safras');
+    if (j && j.status === 'ok') {
+      const escolhida = SAFRA_URL || j.atual;
+      sel.innerHTML = j.data.map(s =>
+        `<option value="${s.label}" ${s.label === escolhida ? 'selected' : ''}>${s.label}${s.atual ? ' (atual)' : ''}</option>`).join('');
+      sel.onchange = () => {
+        const p = new URLSearchParams(location.search);
+        p.set('safra', sel.value);
+        if (SENHA_URL) p.set('senha', SENHA_URL);
+        location.search = p.toString();
+      };
+    }
+  }
 });
 const fmt  = n => Number(n ?? 0).toLocaleString('pt-BR', {maximumFractionDigits: 0});
 const fmt2 = n => Number(n ?? 0).toLocaleString('pt-BR', {maximumFractionDigits: 2});

@@ -28,7 +28,9 @@ CONFIG = {
     ),
 
     # ── App ──
-    "SAFRA_LABEL":  os.getenv("SAFRA_LABEL", "SAFRA 26"),
+    # Rótulo da safra corrente usado só como SEED/fallback — o cadastro vivo
+    # de safras mora na tabela `safras` (label + sa_safra_id + atual).
+    "SAFRA_LABEL":  os.getenv("SAFRA_LABEL", "SAFRA 26/27"),
     "PAINEL_SENHA": os.getenv("PAINEL_SENHA", ""),          # leitura
     "ADMIN_SENHA":  os.getenv("ADMIN_SENHA", ""),           # edição de metas/config (default: PAINEL_SENHA)
     "SECRET_KEY":   os.getenv("SECRET_KEY", "troque-em-producao"),

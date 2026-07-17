@@ -29,6 +29,25 @@
 </div>
 
 <div class="card">
+  <h2>Safras</h2>
+  <p style="color:var(--texto-leve);font-size:13px;margin-bottom:10px">
+    A safra marcada como <b>atual</b> é a que o sync (cron 08h e botão) busca no Simple Agro.
+    As metas e visões seguem a safra escolhida no seletor da barra lateral.
+  </p>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>Safra</th><th>ID da safra no SA</th><th>Atual</th></tr></thead>
+    <tbody id="tSafras"></tbody>
+  </table>
+  </div>
+  <div class="form-linha" style="margin-top:12px" id="novaSafraForm" hidden>
+    <div><label>Nova safra (label)</label><input id="nsLabel" placeholder="SAFRA 27/28"></div>
+    <div><label>ID da safra no Simple Agro</label><input id="nsSaId" placeholder="ex.: 69a5d8..."></div>
+    <div style="align-self:end"><button class="btn primario" onclick="criarSafra()">Adicionar safra</button></div>
+  </div>
+</div>
+
+<div class="card">
   <h2>Histórico de sincronizações</h2>
   <div style="overflow-x:auto">
   <table>
@@ -44,9 +63,21 @@
 const ADMIN = {{ 'true' if admin else 'false' }};
 
 async function carregar() {
-  const [v, g, s] = await Promise.all([
+  const [v, g, s, sf] = await Promise.all([
     apiGet('/api/vendedores'), apiGet('/api/metas/grade'), apiGet('/api/sync/status'),
+    apiGet('/api/safras'),
   ]);
+  if (sf && sf.status === 'ok') {
+    if (ADMIN) document.getElementById('novaSafraForm').hidden = false;
+    document.getElementById('tSafras').innerHTML = sf.data.map(x => `
+      <tr>
+        <td>${x.label}</td>
+        <td>${ADMIN ? `<input value="${x.sa_safra_id ?? ''}" style="min-width:220px"
+              onchange="salvarSafra(${x.id}, {sa_safra_id: this.value})">` : (x.sa_safra_id ?? '—')}</td>
+        <td>${x.atual ? '<span class="badge ok">atual</span>'
+              : (ADMIN ? `<button class="btn" onclick="tornarAtual(${x.id}, '${x.label}')">tornar atual</button>` : '—')}</td>
+      </tr>`).join('');
+  }
   if (v && v.status === 'ok') {
     document.getElementById('tVends').innerHTML = v.data.map(x => `
       <tr>
@@ -81,6 +112,24 @@ async function salvarVend(id, body) {
 async function salvarCult(id, oculta) {
   const j = await apiPost('/api/cultivares/' + id, {oculta});
   avisa(j.status === 'ok' ? 'Salvo.' : 'Erro: ' + j.message);
+}
+async function salvarSafra(id, body) {
+  const j = await apiPost('/api/safras/' + id, body);
+  avisa(j.status === 'ok' ? 'Salvo.' : 'Erro: ' + j.message);
+}
+async function tornarAtual(id, label) {
+  if (!confirm(`Tornar "${label}" a safra ATUAL? O sync (cron e botão) passa a buscar essa safra no SA.`)) return;
+  const j = await apiPost('/api/safras/' + id, {atual: true});
+  if (j.status === 'ok') { avisa('Safra atual alterada.'); location.reload(); }
+  else avisa('Erro: ' + j.message);
+}
+async function criarSafra() {
+  const label = document.getElementById('nsLabel').value.trim();
+  const sa_safra_id = document.getElementById('nsSaId').value.trim();
+  if (!label) { avisa('Informe o label da safra.'); return; }
+  const j = await apiPost('/api/safras', {label, sa_safra_id});
+  if (j.status === 'ok') { avisa('Safra adicionada.'); carregar(); }
+  else avisa('Erro: ' + j.message);
 }
 carregar();
 </script>

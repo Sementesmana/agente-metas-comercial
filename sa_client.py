@@ -23,7 +23,7 @@ from config import CONFIG, STATUS_INCLUIDOS, SA_CACHE_TTL
 
 log = logging.getLogger("MetasComercial.SA")
 
-_cache = {"data": None, "ts": 0}
+_cache: dict = {}   # {sa_safra_id: {"data": [...], "ts": epoch}}
 _cache_lock = threading.Lock()
 
 
@@ -106,10 +106,10 @@ class SimpleAgroClient:
             log.error(f"Erro login SA: {e}")
             return False
 
-    def get_orders(self) -> list:
+    def get_orders(self, sa_safra_id: str | None = None) -> list:
         url = f"{self.base}/api/orders"
         params = {
-            "safra.id":               CONFIG["SAFRA_ID"],
+            "safra.id":               sa_safra_id or CONFIG["SAFRA_ID"],
             "limit":                  -1,
             "itens.grupo_produto.id": CONFIG["GRUPO_SOJA_ID"],
             "deleted":                "false",
@@ -207,24 +207,26 @@ def agregar_pedido_cultivar(linhas: list) -> dict:
     return agg
 
 
-def fetch_linhas_sa(force: bool = False) -> list:
-    """Busca (com cache 30 min, igual estoque) e devolve linhas normalizadas."""
+def fetch_linhas_sa(force: bool = False, sa_safra_id: str | None = None) -> list:
+    """Busca (com cache 30 min POR SAFRA, igual estoque) e devolve linhas normalizadas."""
     global _cache
+    sid = sa_safra_id or CONFIG["SAFRA_ID"]
     with _cache_lock:
         now = time.time()
-        if not force and _cache["data"] is not None and (now - _cache["ts"]) < SA_CACHE_TTL:
+        item = _cache.get(sid)
+        if not force and item and (now - item["ts"]) < SA_CACHE_TTL:
             log.info("SA: usando cache.")
-            return _cache["data"]
+            return item["data"]
     client = SimpleAgroClient()
     if not client.login():
         log.error("SA: login falhou — devolvendo cache antigo ou vazio.")
-        return _cache.get("data") or []
-    orders = client.get_orders()
+        return (_cache.get(sid) or {}).get("data") or []
+    orders = client.get_orders(sid)
     if not orders:
-        return _cache.get("data") or []
+        return (_cache.get(sid) or {}).get("data") or []
     linhas = extrair_linhas(orders)
     with _cache_lock:
-        _cache = {"data": linhas, "ts": time.time()}
+        _cache[sid] = {"data": linhas, "ts": time.time()}
     total = sum(l["bags"] for l in linhas if l["incluido"])
-    log.info(f"SA processado: {len(linhas)} linhas, {total:.1f} bags no funil.")
+    log.info(f"SA processado (safra {sid}): {len(linhas)} linhas, {total:.1f} bags no funil.")
     return linhas

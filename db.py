@@ -178,6 +178,30 @@ CREATE TABLE IF NOT EXISTS audit_log (
     payload   JSONB,
     criado_em TIMESTAMP DEFAULT NOW()
 );
+
+-- Multi-safra (2026-07-17): cadastro de safras; metas/sync/visões amarradas por label
+CREATE TABLE IF NOT EXISTS safras (
+    id          SERIAL PRIMARY KEY,
+    label       TEXT UNIQUE NOT NULL,
+    sa_safra_id TEXT,
+    atual       BOOLEAN DEFAULT FALSE,
+    criado_em   TIMESTAMP DEFAULT NOW()
+);
+ALTER TABLE sync_runs ADD COLUMN IF NOT EXISTS safra TEXT;
+
+-- De-para SE por safra. Modelo de DOIS NÍVEIS do SoftExpert (explicação Xayer 2026-07-17):
+--   1) id_indicador  = código do CADASTRO do indicador (ST007) — a variedade XYZ é
+--      UM indicador de catálogo, compartilhado pelos N vendedores;
+--   2) idscmetric    = identificador da AMARRAÇÃO no scorecard — a XYZ debaixo de
+--      cada vendedor ganha um ID próprio. É ESTA a chave que o
+--      addMeasuresInAdinterface usa pra gravar meta/medição.
+-- Chave lógica: safra × vendedor × cultivar (cultivar NULL = indicador-pai do vendedor)
+ALTER TABLE depara_se ADD COLUMN IF NOT EXISTS safra TEXT;
+ALTER TABLE depara_se ADD COLUMN IF NOT EXISTS chave_app TEXT;      -- ex. COM-2627-JOSE-761I2X
+ALTER TABLE depara_se ADD COLUMN IF NOT EXISTS id_indicador TEXT;   -- código do cadastro (nível 1)
+ALTER TABLE depara_se DROP CONSTRAINT IF EXISTS depara_se_vendedor_id_cultivar_id_key;
+CREATE UNIQUE INDEX IF NOT EXISTS ux_depara_safra
+    ON depara_se (safra, vendedor_id, COALESCE(cultivar_id, 0));
 """
 
 
@@ -185,7 +209,34 @@ def init_db():
     with db_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(DDL)
+            # Seed/migração idempotente da safra corrente
+            cur.execute("SELECT COUNT(*) FROM safras")
+            if cur.fetchone()[0] == 0:
+                cur.execute(
+                    "INSERT INTO safras (label, sa_safra_id, atual) VALUES (%s, %s, TRUE)",
+                    (CONFIG["SAFRA_LABEL"], CONFIG["SAFRA_ID"]),
+                )
+                # Renomeia registros antigos do rótulo provisório "SAFRA 26"
+                cur.execute("UPDATE meta_versoes SET safra=%s WHERE safra='SAFRA 26'",
+                            (CONFIG["SAFRA_LABEL"],))
+            cur.execute("SELECT label FROM safras WHERE atual LIMIT 1")
+            row = cur.fetchone()
+            if row:
+                cur.execute("UPDATE sync_runs SET safra=%s WHERE safra IS NULL", (row[0],))
     log.info(f"Schema '{SCHEMA}' pronto.")
+
+
+def safra_atual_db() -> dict:
+    """Safra marcada como atual (fallback: env)."""
+    try:
+        with db_conn() as conn, dict_cur(conn) as cur:
+            cur.execute("SELECT id, label, sa_safra_id FROM safras WHERE atual LIMIT 1")
+            row = cur.fetchone()
+            if row:
+                return dict(row)
+    except Exception:
+        pass
+    return {"id": None, "label": CONFIG["SAFRA_LABEL"], "sa_safra_id": CONFIG["SAFRA_ID"]}
 
 
 def dict_cur(conn):

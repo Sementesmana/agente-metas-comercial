@@ -10,7 +10,7 @@ Regras de negócio (Alex):
 """
 import logging
 
-from db import get_db, dict_cur, audit
+from db import get_db, dict_cur, audit, safra_atual_db
 from config import CONFIG
 
 log = logging.getLogger("MetasComercial.Metas")
@@ -20,9 +20,17 @@ TIPOS = {"INICIAL", "CASCATA", "REALOCACAO", "AJUSTE", "VOLUME_NOVO"}
 
 # ── Realizado (a partir do último snapshot OK) ────────────────────────────────
 
-def ultimo_run_ok(conn):
+def ultimo_run_ok(conn, safra: str | None = None):
+    """Último run OK — da safra pedida (runs antigos sem safra contam pra atual)."""
     with dict_cur(conn) as cur:
-        cur.execute("SELECT id, fim, resumo FROM sync_runs WHERE status='OK' ORDER BY id DESC LIMIT 1")
+        if safra:
+            cur.execute("""
+                SELECT id, fim, resumo FROM sync_runs
+                WHERE status='OK' AND (safra=%s OR safra IS NULL)
+                ORDER BY id DESC LIMIT 1
+            """, (safra,))
+        else:
+            cur.execute("SELECT id, fim, resumo FROM sync_runs WHERE status='OK' ORDER BY id DESC LIMIT 1")
         return cur.fetchone()
 
 
@@ -141,7 +149,7 @@ def _cadastros(conn):
 
 
 def visao_dashboard(conn, safra: str) -> dict:
-    run = ultimo_run_ok(conn)
+    run = ultimo_run_ok(conn, safra)
     vendedores, cultivares = _cadastros(conn)
     metas = metas_vigentes(conn, safra)
     realizado = realizado_por_vendedor_cultivar(conn, run["id"]) if run else {}
@@ -187,7 +195,7 @@ def visao_dashboard(conn, safra: str) -> dict:
 
 
 def visao_vendedor(conn, safra: str, vendedor_id: int) -> dict:
-    run = ultimo_run_ok(conn)
+    run = ultimo_run_ok(conn, safra)
     vendedores, cultivares = _cadastros(conn)
     metas = metas_vigentes(conn, safra)
     realizado = realizado_por_vendedor_cultivar(conn, run["id"]) if run else {}
@@ -243,7 +251,7 @@ def visao_consolidado(conn, safra: str, estoque_map: dict) -> list:
     estoque_map: {cultivar_norm: {producao_bag, compra_bag, qualidade_bag}}
     (vindo do /api/estoque do agente-estoque — fonte do estoque inicial).
     """
-    run = ultimo_run_ok(conn)
+    run = ultimo_run_ok(conn, safra)
     vendedores, cultivares = _cadastros(conn)
     metas = metas_vigentes(conn, safra)
     realizado = realizado_por_vendedor_cultivar(conn, run["id"]) if run else {}
@@ -328,4 +336,5 @@ def _nome_c(cultivares, cid):
 
 
 def safra_atual() -> str:
-    return CONFIG["SAFRA_LABEL"]
+    """Label da safra marcada como atual no cadastro (fallback: env SAFRA_LABEL)."""
+    return safra_atual_db()["label"]

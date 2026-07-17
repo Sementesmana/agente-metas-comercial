@@ -13,7 +13,7 @@ import logging
 import psycopg2.extras
 
 import cache
-from db import get_db, put_db
+from db import get_db, put_db, safra_atual_db
 from sa_client import fetch_linhas_sa, agregar_pedido_cultivar
 
 log = logging.getLogger("MetasComercial.Pipeline")
@@ -87,14 +87,18 @@ def run_sync(force_sa: bool = True) -> dict:
 
 
 def _run_sync_locked(conn, force_sa: bool) -> dict:
+    safra = safra_atual_db()   # o sync SEMPRE roda pra safra marcada como atual
     with conn.cursor() as cur:
-        cur.execute("INSERT INTO sync_runs (status, etapa) VALUES ('RODANDO','INGESTAO_SA') RETURNING id")
+        cur.execute(
+            "INSERT INTO sync_runs (status, etapa, safra) VALUES ('RODANDO','INGESTAO_SA',%s) RETURNING id",
+            (safra["label"],),
+        )
         run_id = cur.fetchone()[0]
     conn.commit()
 
     try:
         # ── Etapa 1: ingestão SA (funil-espelho do agente-estoque) ──
-        linhas = fetch_linhas_sa(force=force_sa)
+        linhas = fetch_linhas_sa(force=force_sa, sa_safra_id=safra["sa_safra_id"])
         if not linhas:
             raise RuntimeError("SA devolveu 0 linhas — abortando sem gravar snapshot.")
         novo = agregar_pedido_cultivar(linhas)
@@ -120,9 +124,9 @@ def _run_sync_locked(conn, force_sa: bool) -> dict:
                 VALUES %s
             """, rows)
 
-        # ── Etapa 3: diff vs último run OK ──
+        # ── Etapa 3: diff vs último run OK da MESMA safra ──
         _set_etapa(conn, run_id, "DIFF")
-        antigo = _load_snapshot_anterior(conn, run_id)
+        antigo = _load_snapshot_anterior(conn, run_id, safra["label"])
         eventos = diff_snapshots(antigo, novo) if antigo else []
         if eventos:
             ev_rows = [
@@ -141,7 +145,7 @@ def _run_sync_locked(conn, force_sa: bool) -> dict:
 
         vendido = round(sum(r["bags"] for r in novo.values() if r["incluido"]), 2)
         resumo = {
-            "linhas": len(novo), "vendido_bags": vendido,
+            "safra": safra["label"], "linhas": len(novo), "vendido_bags": vendido,
             "eventos": len(eventos), "primeiro_run": not bool(antigo),
         }
         with conn.cursor() as cur:
@@ -198,12 +202,14 @@ def _upsert_cultivares(conn, pares: set) -> dict:
         return dict(cur.fetchall())
 
 
-def _load_snapshot_anterior(conn, run_atual: int):
-    """Snapshot do último run OK anterior, como dict {(numpedido, cultivar_norm): row}."""
+def _load_snapshot_anterior(conn, run_atual: int, safra_label: str):
+    """Snapshot do último run OK anterior DA MESMA SAFRA, {(numpedido, cultivar_norm): row}."""
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
         cur.execute(
-            "SELECT id FROM sync_runs WHERE status='OK' AND id < %s ORDER BY id DESC LIMIT 1",
-            (run_atual,),
+            """SELECT id FROM sync_runs
+               WHERE status='OK' AND id < %s AND (safra=%s OR safra IS NULL)
+               ORDER BY id DESC LIMIT 1""",
+            (run_atual, safra_label),
         )
         prev = cur.fetchone()
         if not prev:
