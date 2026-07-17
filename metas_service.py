@@ -155,11 +155,15 @@ def visao_dashboard(conn, safra: str) -> dict:
     realizado = realizado_por_vendedor_cultivar(conn, run["id"]) if run else {}
 
     por_vend = {}
+    sem_vendedor = 0.0
     for (v_id, c_id), m in metas.items():
         por_vend.setdefault(v_id, {"meta": 0.0, "vendido": 0.0})
         por_vend[v_id]["meta"] += m["valor"]
     for (v_id, c_id), bags in realizado.items():
         if v_id is None:
+            # Pedido SEM vendedor no SA — precisa aparecer, senão o vendido total
+            # não bate com o "Pedido" do painel de estoque (mesmo número!)
+            sem_vendedor += bags
             continue
         por_vend.setdefault(v_id, {"meta": 0.0, "vendido": 0.0})
         por_vend[v_id]["vendido"] += bags
@@ -179,6 +183,12 @@ def visao_dashboard(conn, safra: str) -> dict:
             "pct": round(vendido / meta, 4) if meta else None,
         })
     ranking.sort(key=lambda x: (x["pct"] is None, -(x["pct"] or 0)))
+    if sem_vendedor > 0:
+        ranking.append({
+            "vendedor_id": None, "nome": "— Sem vendedor (SA) —",
+            "data_contratacao": None, "meta": 0.0,
+            "vendido": round(sem_vendedor, 2), "falta": 0.0, "pct": None,
+        })
 
     meta_total = round(sum(r["meta"] for r in ranking), 2)
     vendido_total = round(sum(r["vendido"] for r in ranking), 2)

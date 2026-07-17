@@ -60,13 +60,14 @@ async function carregar() {
   const d = j.data;
   document.getElementById('subSync').textContent =
     d.ultimo_sync ? ('último sync: ' + d.ultimo_sync.slice(0, 16).replace('T', ' ')) : 'nenhum sync ainda — clique em Atualizar agora';
+  const vends = d.ranking.filter(r => r.vendedor_id != null);
   document.getElementById('kpis').innerHTML = `
-    <div class="kpi"><div class="lbl">Meta total</div><div class="val">${fmt(d.kpis.meta_total)} <small>bags</small></div></div>
-    <div class="kpi"><div class="lbl">Vendido</div><div class="val">${fmt(d.kpis.vendido_total)} <small>bags</small></div></div>
-    <div class="kpi"><div class="lbl">Atingimento geral</div><div class="val" style="color:var(--ouro)">${pct(d.kpis.pct_geral)}</div></div>
-    <div class="kpi"><div class="lbl">Vendedores</div><div class="val">${d.ranking.length}</div></div>`;
+    <div class="kpi"><div class="ico verde">🎯</div><div class="val verde">${fmt(d.kpis.meta_total)} <small>bags</small></div><div class="lbl">Meta Total</div></div>
+    <div class="kpi"><div class="ico laranja">🛒</div><div class="val laranja">${fmt(d.kpis.vendido_total)} <small>bags</small></div><div class="lbl">Vendido</div></div>
+    <div class="kpi"><div class="ico azul">📈</div><div class="val azul">${pct(d.kpis.pct_geral)}</div><div class="lbl">Atingimento Geral</div></div>
+    <div class="kpi"><div class="ico ouro">👥</div><div class="val ouro">${vends.length}</div><div class="lbl">Vendedores</div></div>`;
   document.getElementById('ranking').innerHTML = d.ranking.map(r => `
-    <tr class="clicavel" onclick="abrirVendedor(${r.vendedor_id})">
+    <tr ${r.vendedor_id != null ? `class="clicavel" onclick="abrirVendedor(${r.vendedor_id})"` : 'style="opacity:.6"'}>
       <td>${r.nome}</td>
       <td style="color:var(--texto-leve)">${tempoDeCasa(r.data_contratacao) ?? '—'}</td>
       <td>${fmt(r.vendido)}</td><td>${fmt(r.meta)}</td><td>${fmt(r.falta)}</td>

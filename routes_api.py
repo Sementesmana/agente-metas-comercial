@@ -323,8 +323,111 @@ def api_safra_update(sid):
             if "sa_safra_id" in p:
                 cur.execute("UPDATE safras SET sa_safra_id=%s WHERE id=%s",
                             ((p["sa_safra_id"] or "").strip() or None, sid))
+            if "idscorecard" in p:
+                cur.execute("UPDATE safras SET idscorecard=%s WHERE id=%s",
+                            ((p["idscorecard"] or "").strip() or None, sid))
             if "label" in p and (p["label"] or "").strip():
                 cur.execute("UPDATE safras SET label=%s WHERE id=%s",
                             (p["label"].strip(), sid))
+    cache.invalidate()
+    return jsonify({"status": "ok"})
+
+
+# ── De-para SoftExpert (chaves do CPM) ───────────────────────────────────────
+
+def _slug(txt: str) -> str:
+    import unicodedata as _u
+    import re as _re
+    s = _u.normalize("NFD", (txt or "").upper())
+    s = "".join(c for c in s if _u.category(c) != "Mn")
+    return _re.sub(r"[^A-Z0-9]", "", s)
+
+
+@api.get("/depara")
+@requer_leitura
+def api_depara():
+    """Todas as combinações da safra (pai por vendedor + vendedor×cultivar de
+    metas/realizado) com o de-para atual e sugestão de chave_app."""
+    safra = _safra_req()
+    with db_conn() as conn, dict_cur(conn) as cur:
+        cur.execute("SELECT id, label, sa_safra_id, idscorecard FROM safras WHERE label=%s", (safra,))
+        srow = cur.fetchone()
+        run = ultimo_run_ok(conn, safra)
+        combos = set()
+        cur.execute("SELECT DISTINCT vendedor_id, cultivar_id FROM meta_versoes WHERE safra=%s AND vigente", (safra,))
+        combos |= {(r["vendedor_id"], r["cultivar_id"]) for r in cur.fetchall()}
+        if run:
+            cur.execute("""SELECT DISTINCT vendedor_id, cultivar_id FROM snapshot_pedidos
+                           WHERE run_id=%s AND incluido AND vendedor_id IS NOT NULL
+                             AND cultivar_id IS NOT NULL""", (run["id"],))
+            combos |= {(r["vendedor_id"], r["cultivar_id"]) for r in cur.fetchall()}
+        combos |= {(v, None) for (v, _c) in combos}  # indicador-pai por vendedor
+        cur.execute("SELECT id, nome_sa, nome_exibicao FROM vendedores")
+        vends = {r["id"]: r for r in cur.fetchall()}
+        cur.execute("SELECT id, nome_norm, nome_exibicao, oculta FROM cultivares")
+        cults = {r["id"]: r for r in cur.fetchall()}
+        cur.execute("""SELECT vendedor_id, cultivar_id, chave_app, id_indicador,
+                              idscmetric, idscorecard
+                       FROM depara_se WHERE safra=%s""", (safra,))
+        atual = {(r["vendedor_id"], r["cultivar_id"]): r for r in cur.fetchall()}
+
+    sufixo_safra = _slug(safra).replace("SAFRA", "") or "S"
+    out = []
+    for (v_id, c_id) in combos:
+        v = vends.get(v_id)
+        if not v:
+            continue
+        c = cults.get(c_id) if c_id else None
+        if c_id and (not c or c.get("oculta")):
+            continue
+        dp = atual.get((v_id, c_id), {})
+        sug = f"COM-{sufixo_safra}-{_slug(v['nome_sa'])[:14]}" + (f"-{_slug(c['nome_norm'])}" if c else "")
+        out.append({
+            "vendedor_id": v_id, "vendedor": v.get("nome_exibicao") or v["nome_sa"],
+            "cultivar_id": c_id, "cultivar": (c.get("nome_exibicao") or c["nome_norm"]) if c else None,
+            "chave_app": dp.get("chave_app") or sug,
+            "id_indicador": dp.get("id_indicador") or "",
+            "idscmetric": dp.get("idscmetric") or "",
+        })
+    out.sort(key=lambda x: (x["vendedor"], x["cultivar"] is not None, x["cultivar"] or ""))
+    total = len(out)
+    preenchidos = sum(1 for x in out if x["idscmetric"])
+    return jsonify({"status": "ok", "safra": safra,
+                    "idscorecard": (srow or {}).get("idscorecard") or "",
+                    "safra_id": (srow or {}).get("id"),
+                    "resumo": {"total": total, "preenchidos": preenchidos},
+                    "data": out})
+
+
+@api.post("/depara")
+@requer_admin
+def api_depara_salvar():
+    """Upsert de uma linha do de-para (chave: safra × vendedor × cultivar)."""
+    p = request.get_json(force=True)
+    safra = _safra_req()
+    v_id = p.get("vendedor_id")
+    c_id = p.get("cultivar_id")  # None = pai
+    if not v_id:
+        return jsonify({"status": "error", "message": "vendedor_id é obrigatório"}), 400
+    with db_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO depara_se (safra, vendedor_id, cultivar_id, chave_app,
+                                       id_indicador, idscmetric, idscorecard)
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (safra, vendedor_id, COALESCE(cultivar_id, 0)) DO UPDATE SET
+                    chave_app    = EXCLUDED.chave_app,
+                    id_indicador = EXCLUDED.id_indicador,
+                    idscmetric   = EXCLUDED.idscmetric,
+                    idscorecard  = EXCLUDED.idscorecard
+            """, (safra, int(v_id), int(c_id) if c_id else None,
+                  (p.get("chave_app") or "").strip() or None,
+                  (p.get("id_indicador") or "").strip() or None,
+                  (p.get("idscmetric") or "").strip() or None,
+                  (p.get("idscorecard") or "").strip() or None))
+        from db import audit
+        audit(conn, usuario_atual(), "depara_salvo",
+              {"safra": safra, "vendedor_id": v_id, "cultivar_id": c_id,
+               "idscmetric": p.get("idscmetric"), "id_indicador": p.get("id_indicador")})
     cache.invalidate()
     return jsonify({"status": "ok"})

@@ -48,6 +48,28 @@
 </div>
 
 <div class="card">
+  <h2>De-para SoftExpert (CPM) — <span id="dpSafra"></span></h2>
+  <p style="color:var(--texto-leve);font-size:13px;margin-bottom:10px">
+    Modelo de 2 níveis do SE: <b>ID do indicador</b> = código do cadastro (a variedade é um
+    indicador só, compartilhado) · <b>ID no scorecard</b> = código da amarração daquele
+    vendedor — <b>é a chave usada pra gravar meta/medição</b>. Linha sem cultivar = indicador-pai do vendedor.
+  </p>
+  <div class="form-linha">
+    <div style="max-width:340px"><label>ID do Scorecard desta safra (SE)</label>
+      <input id="dpScorecard" placeholder="identificador do scorecard no SE"
+             onchange="salvarScorecard(this.value)"></div>
+    <div style="align-self:end;color:var(--texto-leve);font-size:13px" id="dpResumo"></div>
+  </div>
+  <div style="overflow-x:auto;max-height:60vh">
+  <table>
+    <thead><tr><th>Vendedor</th><th>Cultivar</th><th>Chave do app</th>
+      <th>ID do indicador (cadastro)</th><th>ID no scorecard (amarração)</th></tr></thead>
+    <tbody id="tDepara"></tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
   <h2>Histórico de sincronizações</h2>
   <div style="overflow-x:auto">
   <table>
@@ -63,10 +85,27 @@
 const ADMIN = {{ 'true' if admin else 'false' }};
 
 async function carregar() {
-  const [v, g, s, sf] = await Promise.all([
+  const [v, g, s, sf, dp] = await Promise.all([
     apiGet('/api/vendedores'), apiGet('/api/metas/grade'), apiGet('/api/sync/status'),
-    apiGet('/api/safras'),
+    apiGet('/api/safras'), apiGet('/api/depara'),
   ]);
+  if (dp && dp.status === 'ok') {
+    DP_SAFRA_ID = dp.safra_id;
+    document.getElementById('dpSafra').textContent = dp.safra;
+    document.getElementById('dpScorecard').value = dp.idscorecard;
+    document.getElementById('dpResumo').textContent =
+      `${dp.resumo.preenchidos}/${dp.resumo.total} amarrações preenchidas`;
+    document.getElementById('tDepara').innerHTML = dp.data.map(x => `
+      <tr>
+        <td>${x.cultivar ? '' : '<b>' + x.vendedor + '</b>'}${x.cultivar ? x.vendedor : ''}</td>
+        <td>${x.cultivar ?? '<span class="badge mid">PAI (total do vendedor)</span>'}</td>
+        <td style="font-family:monospace;font-size:12px">${x.chave_app}</td>
+        <td>${ADMIN ? `<input value="${x.id_indicador}" style="min-width:140px" placeholder="cód. cadastro"
+              onchange="salvarDepara(${x.vendedor_id}, ${x.cultivar_id ?? 'null'}, '${x.chave_app}', this, null)">` : (x.id_indicador || '—')}</td>
+        <td>${ADMIN ? `<input value="${x.idscmetric}" style="min-width:140px" placeholder="cód. amarração"
+              onchange="salvarDepara(${x.vendedor_id}, ${x.cultivar_id ?? 'null'}, '${x.chave_app}', null, this)">` : (x.idscmetric || '—')}</td>
+      </tr>`).join('');
+  }
   if (sf && sf.status === 'ok') {
     if (ADMIN) document.getElementById('novaSafraForm').hidden = false;
     document.getElementById('tSafras').innerHTML = sf.data.map(x => `
@@ -122,6 +161,21 @@ async function tornarAtual(id, label) {
   const j = await apiPost('/api/safras/' + id, {atual: true});
   if (j.status === 'ok') { avisa('Safra atual alterada.'); location.reload(); }
   else avisa('Erro: ' + j.message);
+}
+let DP_SAFRA_ID = null;
+async function salvarDepara(vendedorId, cultivarId, chave, inpInd, inpSc) {
+  const tr = (inpInd || inpSc).closest('tr');
+  const inputs = tr.querySelectorAll('input');
+  const j = await apiPost('/api/depara', {
+    vendedor_id: vendedorId, cultivar_id: cultivarId, chave_app: chave,
+    id_indicador: inputs[0].value, idscmetric: inputs[1].value,
+  });
+  avisa(j.status === 'ok' ? 'De-para salvo.' : 'Erro: ' + j.message);
+}
+async function salvarScorecard(valor) {
+  if (!DP_SAFRA_ID) { avisa('Safra sem cadastro — salve a safra primeiro.'); return; }
+  const j = await apiPost('/api/safras/' + DP_SAFRA_ID, {idscorecard: valor});
+  avisa(j.status === 'ok' ? 'Scorecard salvo.' : 'Erro: ' + j.message);
 }
 async function criarSafra() {
   const label = document.getElementById('nsLabel').value.trim();

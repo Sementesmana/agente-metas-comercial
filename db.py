@@ -188,6 +188,7 @@ CREATE TABLE IF NOT EXISTS safras (
     criado_em   TIMESTAMP DEFAULT NOW()
 );
 ALTER TABLE sync_runs ADD COLUMN IF NOT EXISTS safra TEXT;
+ALTER TABLE safras ADD COLUMN IF NOT EXISTS idscorecard TEXT;  -- ID do Scorecard no SE (1 por safra)
 
 -- De-para SE por safra. Modelo de DOIS NÍVEIS do SoftExpert (explicação Xayer 2026-07-17):
 --   1) id_indicador  = código do CADASTRO do indicador (ST007) — a variedade XYZ é
