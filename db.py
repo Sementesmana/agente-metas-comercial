@@ -44,13 +44,45 @@ def _get_pool() -> psycopg2.pool.ThreadedConnectionPool:
     return _pool
 
 
+def _conn_viva(conn) -> bool:
+    """Valida a conexão com SELECT 1 (pega conexão derrubada por idle/OOM/proxy)."""
+    try:
+        if conn.closed:
+            return False
+        conn.rollback()  # limpa transação abortada herdada
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")
+        return True
+    except Exception:
+        return False
+
+
 def get_db():
-    """Pega conexão do pool (uso longo/explícito — devolver com put_db)."""
-    conn = _get_pool().getconn()
-    if conn.closed:            # conexão morta devolvida ao pool — troca
-        _get_pool().putconn(conn, close=True)
-        conn = _get_pool().getconn()
-    return conn
+    """
+    Pega conexão do pool VALIDADA (uso longo/explícito — devolver com put_db).
+    Blindagem pós-incidente banco-mana 2026-07-18 (OOM derrubou conexões):
+    conexão morta é descartada e substituída; retry com pausa se o banco
+    estiver reiniciando.
+    """
+    import time as _t
+    pool = _get_pool()
+    ultimo_erro = None
+    for tentativa in range(4):
+        try:
+            conn = pool.getconn()
+        except psycopg2.OperationalError as e:   # banco fora/reiniciando
+            ultimo_erro = e
+            log.warning(f"Pool: falha ao conectar (tentativa {tentativa + 1}): {e}")
+            _t.sleep(0.5 * (tentativa + 1))
+            continue
+        if _conn_viva(conn):
+            return conn
+        log.warning("Pool: conexão morta descartada — pegando outra.")
+        try:
+            pool.putconn(conn, close=True)
+        except Exception:
+            pass
+    raise ultimo_erro or RuntimeError("Sem conexão viva com o banco-mana após 4 tentativas.")
 
 
 def put_db(conn):
