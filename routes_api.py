@@ -444,3 +444,72 @@ def api_depara_salvar():
                "idscmetric": p.get("idscmetric"), "id_indicador": p.get("id_indicador")})
     cache.invalidate()
     return jsonify({"status": "ok"})
+
+
+# ── Carga inicial de metas (planilha do Alex) ────────────────────────────────
+
+@api.post("/metas/importar-seed")
+@requer_admin
+def api_importar_seed():
+    """
+    Importa o seed empacotado no repo (seed_metas_safra2627.json) como metas INICIAL.
+    SEGURO por padrão: só grava célula que ainda NÃO tem meta vigente — nunca
+    sobrescreve manutenção já feita pelo Alex. (sobrescrever=true força.)
+    Idempotente: pode clicar de novo sem duplicar nada.
+    """
+    import json as _json
+    import os as _os
+    import re as _re
+
+    sobrescrever = bool((request.get_json(silent=True) or {}).get("sobrescrever"))
+    caminho = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
+                            "seed_metas_safra2627.json")
+    if not _os.path.exists(caminho):
+        return jsonify({"status": "error", "message": "seed_metas_safra2627.json não encontrado"}), 404
+    with open(caminho, encoding="utf-8") as f:
+        seed = _json.load(f)
+    safra = seed["safra"]
+
+    def _norm(s):
+        return _re.sub(r"\s+", " ", (s or "").upper().strip())
+
+    resumo = {"gravadas": 0, "puladas_existentes": 0,
+              "vendedores_criados": [], "cultivares_criadas": [], "bags_gravadas": 0.0}
+
+    with db_conn() as conn:
+        with dict_cur(conn) as cur:
+            cur.execute("SELECT id, nome_sa FROM vendedores")
+            vmap = {_norm(r["nome_sa"]): r["id"] for r in cur.fetchall()}
+            cur.execute("SELECT id, nome_norm FROM cultivares")
+            cmap = {r["nome_norm"]: r["id"] for r in cur.fetchall()}
+
+            for item in seed["itens"]:
+                vn, cn = _norm(item["vendedor"]), _norm(item["cultivar"])
+                if vn not in vmap:   # vendedor da planilha ainda sem venda no SA
+                    cur.execute("""INSERT INTO vendedores (nome_sa, nome_exibicao)
+                                   VALUES (%s, %s) RETURNING id""",
+                                (item["vendedor"], item["vendedor"].title()))
+                    vmap[vn] = cur.fetchone()["id"]
+                    resumo["vendedores_criados"].append(item["vendedor"])
+                if cn not in cmap:
+                    cur.execute("""INSERT INTO cultivares (nome_norm, nome_exibicao)
+                                   VALUES (%s, %s) RETURNING id""", (cn, cn))
+                    cmap[cn] = cur.fetchone()["id"]
+                    resumo["cultivares_criadas"].append(cn)
+
+        vigentes = metas_vigentes(conn, safra)
+        for item in seed["itens"]:
+            v_id = vmap[_norm(item["vendedor"])]
+            c_id = cmap[_norm(item["cultivar"])]
+            if (v_id, c_id) in vigentes and not sobrescrever:
+                resumo["puladas_existentes"] += 1
+                continue
+            gravar_meta(conn, safra, v_id, c_id, float(item["valor"]), "INICIAL",
+                        f"carga inicial — {seed.get('origem', 'planilha')}", usuario_atual())
+            resumo["gravadas"] += 1
+            resumo["bags_gravadas"] += float(item["valor"])
+
+    cache.invalidate()
+    resumo["bags_gravadas"] = round(resumo["bags_gravadas"], 2)
+    log.info(f"Importação seed: {resumo}")
+    return jsonify({"status": "ok", "safra": safra, "resumo": resumo})

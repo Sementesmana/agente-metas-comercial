@@ -1,0 +1,1186 @@
+{
+ "safra": "SAFRA 26/27",
+ "origem": "META POR VENDEDOR SAFRA 26.xlsx (Alex, carga inicial 2026-07-18)",
+ "itens": [
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "690I2X",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "711I2X",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "71KA72",
+   "valor": 70.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "745 I2X",
+   "valor": 15.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "761I2X",
+   "valor": 370.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "76KA72",
+   "valor": 80.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "78KA42",
+   "valor": 4.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "79K80",
+   "valor": 5.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "79KA72",
+   "valor": 5.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "80I82RSFIPRO",
+   "valor": 230.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "80KA72",
+   "valor": 126.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "84KA92",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "85K84RSF CE",
+   "valor": 100.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "GH2483IPRO",
+   "valor": 15.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "GNS7901 IPRO",
+   "valor": 7.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "NEO680IPRO",
+   "valor": 90.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "NEO700I2X",
+   "valor": 240.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "NEO751CE",
+   "valor": 6.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "NEO771I2X",
+   "valor": 220.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "NEO780 CE",
+   "valor": 120.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "NEO791 CE",
+   "valor": 52.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "NEO802I2X",
+   "valor": 450.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "NEO821 I2X",
+   "valor": 170.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "O760CE",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "O790IPRO",
+   "valor": 2200.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "O800I2X",
+   "valor": 110.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "77IX78RSFI2X",
+   "valor": 8.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "80IX81RSFI2X",
+   "valor": 7.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "82I78RSFIPRO",
+   "valor": 37.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "DM78IX80 I2X",
+   "valor": 49.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "NEO799 I2X",
+   "valor": 13.0
+  },
+  {
+   "vendedor": "SEMENTES MANA",
+   "cultivar": "ST767 TF I2X",
+   "valor": 6.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "690I2X",
+   "valor": 80.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "711I2X",
+   "valor": 110.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "71KA72",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "745 I2X",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "74K76RSFCE",
+   "valor": 16.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "761I2X",
+   "valor": 200.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "76KA72",
+   "valor": 60.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "78KA42",
+   "valor": 100.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "80I82RSFIPRO",
+   "valor": 44.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "80KA72",
+   "valor": 90.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "84KA92",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "GH2483IPRO",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "GNS7901 IPRO",
+   "valor": 7.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "NEO680IPRO",
+   "valor": 70.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "NEO700I2X",
+   "valor": 500.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "NEO771I2X",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "NEO780 CE",
+   "valor": 80.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "NEO791 CE",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "NEO802I2X",
+   "valor": 150.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "NEO821 I2X",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "O760CE",
+   "valor": 25.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "O790IPRO",
+   "valor": 1000.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "O800I2X",
+   "valor": 100.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "80IX81RSFI2X",
+   "valor": 12.0
+  },
+  {
+   "vendedor": "JOSE OSVALDO ALVES MARTINS",
+   "cultivar": "81IX82RSFI2X",
+   "valor": 15.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "67I68RSFIPRO",
+   "valor": 150.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "690I2X",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "711I2X",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "71KA72",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "761I2X",
+   "valor": 250.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "76KA72",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "78KA42",
+   "valor": 150.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "80KA72",
+   "valor": 150.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "84KA92",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "NEO680IPRO",
+   "valor": 35.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "NEO700I2X",
+   "valor": 850.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "NEO771I2X",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "NEO780 CE",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "NEO791 CE",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "NEO802I2X",
+   "valor": 300.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "NEO821 I2X",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "O760CE",
+   "valor": 25.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "O790IPRO",
+   "valor": 1200.0
+  },
+  {
+   "vendedor": "FERNANDO APARECIDO RESENDE",
+   "cultivar": "O800I2X",
+   "valor": 150.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "690I2X",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "711I2X",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "71KA72",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "75IX78RSFI2X",
+   "valor": 4.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "761I2X",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "78KA42",
+   "valor": 7.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "80I82RSFIPRO",
+   "valor": 69.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "80KA72",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "84KA92",
+   "valor": 45.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "NEO680IPRO",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "NEO700I2X",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "NEO780 CE",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "NEO802I2X",
+   "valor": 110.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "O760CE",
+   "valor": 25.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "O790IPRO",
+   "valor": 350.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "O800I2X",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "71IX72RSF I2X",
+   "valor": 14.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "77IX78RSFI2X",
+   "valor": 3.0
+  },
+  {
+   "vendedor": "VINICIUS MARQUES MORAES",
+   "cultivar": "828 I2X",
+   "valor": 9.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "690I2X",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "711I2X",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "71KA72",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "761I2X",
+   "valor": 80.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "78KA42",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "80I82RSFIPRO",
+   "valor": 5.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "80KA72",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "84KA92",
+   "valor": 45.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "GH2478IPRO",
+   "valor": 25.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "GH2483IPRO",
+   "valor": 16.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "NEO700I2X",
+   "valor": 150.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "NEO771I2X",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "NEO780 CE",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "NEO791 CE",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "NEO802I2X",
+   "valor": 60.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "NEO821 I2X",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "O760CE",
+   "valor": 25.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "O790IPRO",
+   "valor": 300.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "O800I2X",
+   "valor": 60.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "68KA49",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "AGROROGERIO REPRESENTACOES EIRELI",
+   "cultivar": "80IX81RSFI2X",
+   "valor": 18.0
+  },
+  {
+   "vendedor": "FERNANDO MOREIRA DE CASTRO",
+   "cultivar": "690I2X",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "FERNANDO MOREIRA DE CASTRO",
+   "cultivar": "711I2X",
+   "valor": 60.0
+  },
+  {
+   "vendedor": "FERNANDO MOREIRA DE CASTRO",
+   "cultivar": "71KA72",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "FERNANDO MOREIRA DE CASTRO",
+   "cultivar": "761I2X",
+   "valor": 60.0
+  },
+  {
+   "vendedor": "FERNANDO MOREIRA DE CASTRO",
+   "cultivar": "76KA72",
+   "valor": 80.0
+  },
+  {
+   "vendedor": "FERNANDO MOREIRA DE CASTRO",
+   "cultivar": "78KA42",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "FERNANDO MOREIRA DE CASTRO",
+   "cultivar": "80KA72",
+   "valor": 80.0
+  },
+  {
+   "vendedor": "FERNANDO MOREIRA DE CASTRO",
+   "cultivar": "84KA92",
+   "valor": 140.0
+  },
+  {
+   "vendedor": "FERNANDO MOREIRA DE CASTRO",
+   "cultivar": "NEO700I2X",
+   "valor": 150.0
+  },
+  {
+   "vendedor": "FERNANDO MOREIRA DE CASTRO",
+   "cultivar": "NEO780 CE",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "FERNANDO MOREIRA DE CASTRO",
+   "cultivar": "NEO802I2X",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "FERNANDO MOREIRA DE CASTRO",
+   "cultivar": "O760CE",
+   "valor": 25.0
+  },
+  {
+   "vendedor": "FERNANDO MOREIRA DE CASTRO",
+   "cultivar": "O790IPRO",
+   "valor": 200.0
+  },
+  {
+   "vendedor": "FERNANDO MOREIRA DE CASTRO",
+   "cultivar": "O800I2X",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "67I68RSFIPRO",
+   "valor": 33.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "690I2X",
+   "valor": 15.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "711I2X",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "71KA72",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "74K76RSFCE",
+   "valor": 212.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "761I2X",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "76KA72",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "78KA42",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "79K80",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "79KA72",
+   "valor": 11.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "80KA72",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "84KA92",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "NEO700I2X",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "NEO771I2X",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "NEO780 CE",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "NEO791 CE",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "NEO802I2X",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "O760CE",
+   "valor": 25.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "O790IPRO",
+   "valor": 100.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "O800I2X",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "SANDOVAL NETO",
+   "cultivar": "828 I2X",
+   "valor": 2.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "690I2X",
+   "valor": 5.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "711I2X",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "71KA72",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "761I2X",
+   "valor": 110.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "76KA72",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "80KA72",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "84KA92",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "NEO680IPRO",
+   "valor": 80.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "NEO700I2X",
+   "valor": 240.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "NEO771I2X",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "NEO780 CE",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "NEO791 CE",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "NEO802I2X",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "O760CE",
+   "valor": 25.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "O790IPRO",
+   "valor": 300.0
+  },
+  {
+   "vendedor": "LUDIMILA BORGES SILVA",
+   "cultivar": "O800I2X",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "MARIO SERGIO BARCELOS FARIA",
+   "cultivar": "690I2X",
+   "valor": 5.0
+  },
+  {
+   "vendedor": "MARIO SERGIO BARCELOS FARIA",
+   "cultivar": "711I2X",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "MARIO SERGIO BARCELOS FARIA",
+   "cultivar": "71KA72",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "MARIO SERGIO BARCELOS FARIA",
+   "cultivar": "75IX78RSFI2X",
+   "valor": 12.0
+  },
+  {
+   "vendedor": "MARIO SERGIO BARCELOS FARIA",
+   "cultivar": "761I2X",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "MARIO SERGIO BARCELOS FARIA",
+   "cultivar": "76KA72",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "MARIO SERGIO BARCELOS FARIA",
+   "cultivar": "80KA72",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "MARIO SERGIO BARCELOS FARIA",
+   "cultivar": "84KA92",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "MARIO SERGIO BARCELOS FARIA",
+   "cultivar": "NEO700I2X",
+   "valor": 60.0
+  },
+  {
+   "vendedor": "MARIO SERGIO BARCELOS FARIA",
+   "cultivar": "NEO771I2X",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "MARIO SERGIO BARCELOS FARIA",
+   "cultivar": "NEO791 CE",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "MARIO SERGIO BARCELOS FARIA",
+   "cultivar": "O760CE",
+   "valor": 25.0
+  },
+  {
+   "vendedor": "MARIO SERGIO BARCELOS FARIA",
+   "cultivar": "O790IPRO",
+   "valor": 200.0
+  },
+  {
+   "vendedor": "MARIO SERGIO BARCELOS FARIA",
+   "cultivar": "O800I2X",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "SUELY SCHNEIDER",
+   "cultivar": "690I2X",
+   "valor": 6.0
+  },
+  {
+   "vendedor": "SUELY SCHNEIDER",
+   "cultivar": "71KA72",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "SUELY SCHNEIDER",
+   "cultivar": "761I2X",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "SUELY SCHNEIDER",
+   "cultivar": "76KA72",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "SUELY SCHNEIDER",
+   "cultivar": "80KA72",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "SUELY SCHNEIDER",
+   "cultivar": "84KA92",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "SUELY SCHNEIDER",
+   "cultivar": "NEO680IPRO",
+   "valor": 19.0
+  },
+  {
+   "vendedor": "SUELY SCHNEIDER",
+   "cultivar": "NEO700I2X",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "SUELY SCHNEIDER",
+   "cultivar": "NEO791 CE",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "SUELY SCHNEIDER",
+   "cultivar": "NEO802I2X",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "SUELY SCHNEIDER",
+   "cultivar": "O760CE",
+   "valor": 25.0
+  },
+  {
+   "vendedor": "SUELY SCHNEIDER",
+   "cultivar": "O790IPRO",
+   "valor": 90.0
+  },
+  {
+   "vendedor": "SUELY SCHNEIDER",
+   "cultivar": "O800I2X",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "690I2X",
+   "valor": 5.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "711I2X",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "71KA72",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "761I2X",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "76KA72",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "79KA72",
+   "valor": 7.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "80KA72",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "84KA92",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "GNS7901 IPRO",
+   "valor": 6.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "NEO700I2X",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "NEO771I2X",
+   "valor": 5.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "NEO780 CE",
+   "valor": 5.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "NEO802I2X",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "NEO821 I2X",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "O760CE",
+   "valor": 25.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "O790IPRO",
+   "valor": 87.0
+  },
+  {
+   "vendedor": "NEUSMAR RODRIGUES VALENTIM JUNIOR",
+   "cultivar": "O800I2X",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "EDUARDO PARACATU",
+   "cultivar": "690I2X",
+   "valor": 5.0
+  },
+  {
+   "vendedor": "EDUARDO PARACATU",
+   "cultivar": "711I2X",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "EDUARDO PARACATU",
+   "cultivar": "71KA72",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "EDUARDO PARACATU",
+   "cultivar": "761I2X",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "EDUARDO PARACATU",
+   "cultivar": "76KA72",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "EDUARDO PARACATU",
+   "cultivar": "80KA72",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "EDUARDO PARACATU",
+   "cultivar": "84KA92",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "EDUARDO PARACATU",
+   "cultivar": "NEO700I2X",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "EDUARDO PARACATU",
+   "cultivar": "NEO780 CE",
+   "valor": 5.0
+  },
+  {
+   "vendedor": "EDUARDO PARACATU",
+   "cultivar": "NEO791 CE",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "EDUARDO PARACATU",
+   "cultivar": "NEO802I2X",
+   "valor": 30.0
+  },
+  {
+   "vendedor": "EDUARDO PARACATU",
+   "cultivar": "O760CE",
+   "valor": 25.0
+  },
+  {
+   "vendedor": "EDUARDO PARACATU",
+   "cultivar": "O790IPRO",
+   "valor": 65.0
+  },
+  {
+   "vendedor": "EDUARDO PARACATU",
+   "cultivar": "O800I2X",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "FABIO GUERRA",
+   "cultivar": "711I2X",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "FABIO GUERRA",
+   "cultivar": "71KA72",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "FABIO GUERRA",
+   "cultivar": "80KA72",
+   "valor": 40.0
+  },
+  {
+   "vendedor": "FABIO GUERRA",
+   "cultivar": "84KA92",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "FABIO GUERRA",
+   "cultivar": "NEO700I2X",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "FABIO GUERRA",
+   "cultivar": "NEO771I2X",
+   "valor": 10.0
+  },
+  {
+   "vendedor": "FABIO GUERRA",
+   "cultivar": "NEO791 CE",
+   "valor": 20.0
+  },
+  {
+   "vendedor": "FABIO GUERRA",
+   "cultivar": "NEO802I2X",
+   "valor": 50.0
+  },
+  {
+   "vendedor": "FABIO GUERRA",
+   "cultivar": "O760CE",
+   "valor": 25.0
+  },
+  {
+   "vendedor": "FABIO GUERRA",
+   "cultivar": "O790IPRO",
+   "valor": 105.0
+  },
+  {
+   "vendedor": "FABIO GUERRA",
+   "cultivar": "O800I2X",
+   "valor": 20.0
+  }
+ ]
+}

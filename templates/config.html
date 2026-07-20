@@ -47,6 +47,17 @@
   </div>
 </div>
 
+<div class="card" id="cardSeed" hidden>
+  <h2>Carga inicial de metas — planilha do Alex</h2>
+  <p style="color:var(--texto-leve);font-size:13px;margin-bottom:10px">
+    Importa as 236 metas da <b>META POR VENDEDOR SAFRA 26.xlsx</b> (18.169 bags, 13 vendedores ×
+    40 cultivares) como versões <b>INICIAL</b> da SAFRA 26/27. Seguro: <b>não sobrescreve</b>
+    célula que já tenha meta vigente (manutenção do Alex fica intacta). Pode clicar mais de uma vez.
+  </p>
+  <button class="btn primario" id="btnSeed" onclick="importarSeed()">📥 Importar metas da planilha</button>
+  <div id="seedResultado" style="margin-top:10px;font-size:13px;color:var(--texto-leve)"></div>
+</div>
+
 <div class="card">
   <h2>De-para SoftExpert (CPM) — <span id="dpSafra"></span></h2>
   <p style="color:var(--texto-leve);font-size:13px;margin-bottom:10px">
@@ -162,6 +173,26 @@ async function tornarAtual(id, label) {
   if (j.status === 'ok') { avisa('Safra atual alterada.'); location.reload(); }
   else avisa('Erro: ' + j.message);
 }
+if (ADMIN) document.getElementById('cardSeed').hidden = false;
+async function importarSeed() {
+  const btn = document.getElementById('btnSeed');
+  if (!confirm('Importar as metas da planilha do Alex como carga INICIAL da SAFRA 26/27?\nCélulas que já têm meta vigente serão preservadas.')) return;
+  btn.disabled = true; btn.textContent = 'Importando…';
+  const j = await apiPost('/api/metas/importar-seed', {});
+  btn.disabled = false; btn.textContent = '📥 Importar metas da planilha';
+  if (j.status === 'ok') {
+    const r = j.resumo;
+    document.getElementById('seedResultado').innerHTML =
+      `✅ <b>${r.gravadas}</b> metas gravadas (${fmt(r.bags_gravadas)} bags) · ` +
+      `<b>${r.puladas_existentes}</b> preservadas (já tinham meta) · ` +
+      `vendedores criados: ${r.vendedores_criados.length ? r.vendedores_criados.join(', ') : 'nenhum'} · ` +
+      `cultivares criadas: ${r.cultivares_criadas.length}`;
+    avisa('Carga inicial concluída.');
+  } else {
+    document.getElementById('seedResultado').textContent = '❌ ' + j.message;
+  }
+}
+
 let DP_SAFRA_ID = null;
 async function salvarDepara(vendedorId, cultivarId, chave, inpInd, inpSc) {
   const tr = (inpInd || inpSc).closest('tr');
